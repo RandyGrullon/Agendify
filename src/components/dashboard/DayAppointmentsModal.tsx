@@ -2,7 +2,18 @@ import { useState, useEffect } from "react";
 import { AgendaItem } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X, Search, Edit2, Trash2, Calendar, Clock, User, DollarSign, MapPin, ChevronLeft } from "lucide-react";
+import {
+  X,
+  Search,
+  Edit2,
+  Trash2,
+  Calendar,
+  Clock,
+  User,
+  DollarSign,
+  MapPin,
+  ChevronLeft,
+} from "lucide-react";
 
 interface DayAppointmentsModalProps {
   isOpen: boolean;
@@ -56,12 +67,11 @@ export default function DayAppointmentsModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-        
         {/* Header */}
         <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50">
           <div className="flex items-center gap-2">
             {selectedItem && (
-              <button 
+              <button
                 onClick={() => setSelectedItem(null)}
                 className="p-1 hover:bg-gray-200 rounded-full transition-colors mr-1"
               >
@@ -69,10 +79,12 @@ export default function DayAppointmentsModal({
               </button>
             )}
             <h2 className="text-lg font-bold text-gray-800">
-              {selectedItem ? "Detalles de la Cita" : format(date, "EEEE d 'de' MMMM", { locale: es })}
+              {selectedItem
+                ? "Detalles de la Cita"
+                : format(date, "EEEE d 'de' MMMM", { locale: es })}
             </h2>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="p-1 hover:bg-gray-200 rounded-full transition-colors text-gray-500 hover:text-gray-700"
           >
@@ -82,7 +94,6 @@ export default function DayAppointmentsModal({
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
-          
           {!selectedItem ? (
             /* List View */
             <div className="space-y-4">
@@ -119,15 +130,24 @@ export default function DayAppointmentsModal({
                       </div>
                       <div className="flex items-center justify-between text-sm text-gray-600">
                         <span>{item.service}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          item.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                          item.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                          item.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                          'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {item.status === 'pending' ? 'Pendiente' :
-                           item.status === 'confirmed' ? 'Confirmado' :
-                           item.status === 'completed' ? 'Completado' : 'Cancelado'}
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            item.status === "confirmed"
+                              ? "bg-green-100 text-green-700"
+                              : item.status === "completed"
+                              ? "bg-blue-100 text-blue-700"
+                              : item.status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {item.status === "pending"
+                            ? "Pendiente"
+                            : item.status === "confirmed"
+                            ? "Confirmado"
+                            : item.status === "completed"
+                            ? "Completado"
+                            : "Cancelado"}
                         </span>
                       </div>
                     </div>
@@ -145,7 +165,9 @@ export default function DayAppointmentsModal({
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Cliente</p>
-                    <p className="font-semibold text-gray-900 text-lg">{selectedItem.client}</p>
+                    <p className="font-semibold text-gray-900 text-lg">
+                      {selectedItem.client}
+                    </p>
                   </div>
                 </div>
 
@@ -156,7 +178,8 @@ export default function DayAppointmentsModal({
                   <div>
                     <p className="text-sm text-gray-500">Horario</p>
                     <p className="font-medium text-gray-900">
-                      {format(date, "d 'de' MMMM, yyyy", { locale: es })} • {selectedItem.time}
+                      {format(date, "d 'de' MMMM, yyyy", { locale: es })} •{" "}
+                      {selectedItem.time}
                     </p>
                   </div>
                 </div>
@@ -167,7 +190,9 @@ export default function DayAppointmentsModal({
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Servicio</p>
-                    <p className="font-medium text-gray-900">{selectedItem.service}</p>
+                    <p className="font-medium text-gray-900">
+                      {selectedItem.service}
+                    </p>
                   </div>
                 </div>
 
@@ -178,7 +203,7 @@ export default function DayAppointmentsModal({
                   <div>
                     <p className="text-sm text-gray-500">Precio Cotizado</p>
                     <p className="font-medium text-gray-900">
-                      ${selectedItem.quotedAmount.toLocaleString('es-MX')}
+                      ${selectedItem.quotedAmount.toLocaleString("es-MX")}
                     </p>
                   </div>
                 </div>
@@ -190,7 +215,9 @@ export default function DayAppointmentsModal({
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Ubicación</p>
-                      <p className="font-medium text-gray-900">{selectedItem.location}</p>
+                      <p className="font-medium text-gray-900">
+                        {selectedItem.location}
+                      </p>
                     </div>
                   </div>
                 )}

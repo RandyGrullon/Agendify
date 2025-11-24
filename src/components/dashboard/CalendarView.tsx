@@ -68,7 +68,9 @@ export default function CalendarView({
   const [date, setDate] = useState(new Date());
   const [isMobile, setIsMobile] = useState(false);
   const [dayModalOpen, setDayModalOpen] = useState(false);
-  const [selectedDateForModal, setSelectedDateForModal] = useState<Date | null>(null);
+  const [selectedDateForModal, setSelectedDateForModal] = useState<Date | null>(
+    null
+  );
 
   useEffect(() => {
     const checkMobile = () => {
@@ -128,7 +130,8 @@ export default function CalendarView({
           color: "#1f2937",
           border: "none",
           display: "block",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+          boxShadow:
+            "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
         },
       };
     }
@@ -164,36 +167,39 @@ export default function CalendarView({
           </div>
           <div className="flex flex-col gap-0.5 mb-2">
             <div className="flex items-center gap-1 text-sm text-gray-700">
-                <span className="truncate font-medium">{item.service}</span>
+              <span className="truncate font-medium">{item.service}</span>
             </div>
             {item.location && (
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <MapPin className="w-3 h-3" />
-                    <span className="truncate">{item.location}</span>
-                </div>
+              <div className="flex items-center gap-1 text-xs text-gray-500">
+                <MapPin className="w-3 h-3" />
+                <span className="truncate">{item.location}</span>
+              </div>
             )}
           </div>
-          
+
           <div className="mt-auto flex items-center justify-between">
-             <div className="flex items-center gap-1 text-sm font-bold text-gray-800">
-                <DollarSign className="w-4 h-4" />
-                {item.quotedAmount.toLocaleString('es-MX')}
+            <div className="flex items-center gap-1 text-sm font-bold text-gray-800">
+              <DollarSign className="w-4 h-4" />
+              {item.quotedAmount.toLocaleString("es-MX")}
             </div>
             {onStatusChange && (
-                <select
-                    value={item.status}
-                    onChange={(e) => {
-                        e.stopPropagation();
-                        onStatusChange(item.id, e.target.value as AgendaItem["status"]);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="text-xs px-2 py-1 bg-white/80 text-gray-900 border border-gray-200 rounded cursor-pointer hover:bg-white focus:ring-1 focus:ring-blue-500 shadow-sm"
-                >
-                    <option value="pending">Pendiente</option>
-                    <option value="confirmed">Confirmado</option>
-                    <option value="completed">Completado</option>
-                    <option value="cancelled">Cancelado</option>
-                </select>
+              <select
+                value={item.status}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onStatusChange(
+                    item.id,
+                    e.target.value as AgendaItem["status"]
+                  );
+                }}
+                onClick={(e) => e.stopPropagation()}
+                className="text-xs px-2 py-1 bg-white/80 text-gray-900 border border-gray-200 rounded cursor-pointer hover:bg-white focus:ring-1 focus:ring-blue-500 shadow-sm"
+              >
+                <option value="pending">Pendiente</option>
+                <option value="confirmed">Confirmado</option>
+                <option value="completed">Completado</option>
+                <option value="cancelled">Cancelado</option>
+              </select>
             )}
           </div>
         </div>
