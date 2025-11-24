@@ -30,8 +30,8 @@ export default function Home() {
       {/* Header */}
       <header className="flex items-center justify-between p-6 lg:px-8">
         <h1 className="text-2xl font-bold text-blue-600">Agendify</h1>
-        <div className="flex gap-4">
-          <Link href="/login" className="text-sm font-medium text-gray-900 hover:text-blue-600">
+        <div className="flex items-center gap-4">
+          <Link href="/login" className="rounded-md px-3.5 py-2.5 text-sm font-semibold text-gray-900 hover:text-blue-600">
             Iniciar Sesión
           </Link>
           <Link href="/register" className="rounded-md bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white hover:bg-blue-500">
