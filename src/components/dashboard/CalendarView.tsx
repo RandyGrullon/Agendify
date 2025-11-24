@@ -355,7 +355,7 @@ export default function CalendarView({
           padding: 16px 12px;
           font-weight: 700;
           font-size: 13px;
-          color: #1f2937;
+          color: #000000;
           background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
           border-bottom: 2px solid #e5e7eb;
           text-transform: uppercase;
@@ -386,7 +386,7 @@ export default function CalendarView({
         }
 
         .rbc-date-cell a {
-          color: #374151;
+          color: #000000;
           transition: color 0.2s ease;
         }
 
@@ -448,6 +448,7 @@ export default function CalendarView({
         .rbc-agenda-time-cell {
           padding: 14px 16px;
           font-weight: 600;
+          color: #000000;
           background: linear-gradient(to right, #f9fafb, #ffffff);
         }
 
@@ -488,6 +489,10 @@ export default function CalendarView({
           background-color: #dbeafe;
           color: #1d4ed8;
         }
+
+        .rbc-label {
+          color: #000000 !important;
+        }
       `}</style>
 
       <div className="p-4 md:p-6">
@@ -524,8 +529,22 @@ export default function CalendarView({
             }}
             selectable
             onSelectSlot={(slotInfo) => {
-              setDate(slotInfo.start);
-              setView(Views.DAY);
+              if (isMobile) {
+                setSelectedDateForModal(slotInfo.start);
+                setDayModalOpen(true);
+              } else {
+                setDate(slotInfo.start);
+                setView(Views.DAY);
+              }
+            }}
+            onDrillDown={(date) => {
+              if (isMobile) {
+                setSelectedDateForModal(date);
+                setDayModalOpen(true);
+              } else {
+                setDate(date);
+                setView(Views.DAY);
+              }
             }}
             components={{
               event: CustomEvent,
