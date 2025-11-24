@@ -1,7 +1,7 @@
 export interface AgendaItem {
     id: string;
     userId: string;
-    date: string; // YYYY-MM-DD
+    date: string | number; // YYYY-MM-DD string or Excel serial number
     time: string;
     client: string; // Client Name (kept for backward compatibility and display)
     clientId?: string; // Link to Client document

@@ -24,9 +24,10 @@ interface ServiceFormProps {
     isOpen: boolean;
     onClose: () => void;
     serviceToEdit?: Service | null;
+    onSuccess?: (service: Service) => void;
 }
 
-export default function ServiceForm({ isOpen, onClose, serviceToEdit }: ServiceFormProps) {
+export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess }: ServiceFormProps) {
     const { user } = useAuth();
     const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({
         resolver: zodResolver(serviceSchema),
@@ -61,9 +62,11 @@ export default function ServiceForm({ isOpen, onClose, serviceToEdit }: ServiceF
             if (serviceToEdit) {
                 await updateService(user.uid, serviceToEdit.id, data);
                 toast.success('Servicio actualizado exitosamente');
+                if (onSuccess) onSuccess({ ...serviceToEdit, ...data });
             } else {
-                await createService(user.uid, data);
+                const docRef = await createService(user.uid, data);
                 toast.success('Servicio creado exitosamente');
+                if (onSuccess) onSuccess({ ...data, id: docRef.id, userId: user.uid, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
             }
             onClose();
             reset();

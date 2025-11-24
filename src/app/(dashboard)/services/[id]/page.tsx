@@ -111,214 +111,220 @@ export default function ServiceDetailPage() {
     }
 
     return (
-        <div className="p-6 max-w-7xl mx-auto">
-            {/* Header */}
-            <div className="mb-6">
+        <div className="min-h-screen bg-gray-50/50">
+            {/* Header Background */}
+            <div className="bg-gradient-to-r from-purple-600 to-purple-800 h-48 w-full absolute top-0 left-0 z-0" />
+
+            <div className="relative z-10 p-4 sm:p-6 max-w-7xl mx-auto">
+                {/* Navigation */}
                 <button
                     onClick={() => router.push('/services')}
-                    className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+                    className="flex items-center text-white/90 hover:text-white mb-6 transition-colors group"
                 >
-                    <ArrowLeft size={20} className="mr-2" />
-                    Volver a servicios
+                    <div className="bg-white/10 p-2 rounded-full group-hover:bg-white/20 transition-colors mr-3">
+                        <ArrowLeft size={20} />
+                    </div>
+                    <span className="font-medium">Volver a servicios</span>
                 </button>
-                <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                        <div className="h-20 w-20 bg-purple-100 rounded-full flex items-center justify-center">
-                            <Package size={40} className="text-purple-600" />
-                        </div>
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900">{service.name}</h1>
-                            <p className="text-gray-600 mt-1">
-                                Creado {format(new Date(service.createdAt), 'MMMM yyyy', { locale: es })}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setIsEditOpen(true)}
-                            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            <Edit size={18} />
-                            Editar
-                        </button>
-                        <button
-                            onClick={handleDelete}
-                            className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors"
-                        >
-                            <Trash2 size={18} />
-                            Eliminar
-                        </button>
-                    </div>
-                </div>
-            </div>
 
-            {/* Service Info */}
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Información del Servicio</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-green-100 rounded-lg">
-                            <DollarSign size={24} className="text-green-600" />
+                {/* Main Service Card */}
+                <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-6">
+                            <div className="h-24 w-24 bg-gradient-to-br from-purple-100 to-purple-50 rounded-2xl flex items-center justify-center shadow-inner border border-purple-100">
+                                <Package size={40} className="text-purple-600" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-900">{service.name}</h1>
+                                <div className="flex items-center gap-2 mt-2 text-gray-500">
+                                    <Calendar size={16} />
+                                    <span>Creado el {format(new Date(service.createdAt), 'dd MMMM yyyy', { locale: es })}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Precio</p>
-                            <p className="text-xl font-bold text-gray-900">
-                                ${service.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <Clock size={24} className="text-blue-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Duración</p>
-                            <p className="text-xl font-bold text-gray-900">{service.duration} min</p>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                            <Package size={24} className="text-purple-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-gray-600">Veces Usado</p>
-                            <p className="text-xl font-bold text-gray-900">{stats.totalBookings}</p>
-                        </div>
-                    </div>
-                </div>
-                {service.description && (
-                    <div className="mt-4 pt-4 border-t border-gray-200">
-                        <p className="text-sm text-gray-600 mb-1">Descripción</p>
-                        <p className="text-gray-900">{service.description}</p>
-                    </div>
-                )}
-            </div>
-
-            {/* Statistics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Total Reservas</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.totalBookings}</p>
-                        </div>
-                        <div className="p-3 bg-blue-100 rounded-full">
-                            <Calendar className="h-6 w-6 text-blue-600" />
+                        <div className="flex gap-3 w-full md:w-auto">
+                            <button
+                                onClick={() => setIsEditOpen(true)}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all font-medium"
+                            >
+                                <Edit size={18} />
+                                Editar
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 bg-red-50 text-red-600 border border-red-100 rounded-xl hover:bg-red-100 hover:border-red-200 transition-all font-medium"
+                            >
+                                <Trash2 size={18} />
+                                Eliminar
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Completadas</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.completedBookings}</p>
-                        </div>
-                        <div className="p-3 bg-green-100 rounded-full">
-                            <Calendar className="h-6 w-6 text-green-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Ingresos</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">
-                                ${stats.totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
-                            </p>
-                        </div>
-                        <div className="p-3 bg-yellow-100 rounded-full">
-                            <DollarSign className="h-6 w-6 text-yellow-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm text-gray-600">Clientes Únicos</p>
-                            <p className="text-2xl font-bold text-gray-900 mt-1">{stats.uniqueClients}</p>
-                        </div>
-                        <div className="p-3 bg-purple-100 rounded-full">
-                            <TrendingUp className="h-6 w-6 text-purple-600" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Appointments History */}
-            <div className="bg-white rounded-lg shadow">
-                <div className="p-6 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                        <h2 className="text-lg font-semibold text-gray-900">Historial de Reservas</h2>
-                        <button
-                            onClick={() => router.push('/dashboard')}
-                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                        >
-                            <Plus size={16} />
-                            Nueva Cita
-                        </button>
-                    </div>
-                </div>
-                <div className="p-6">
-                    {appointments.length === 0 ? (
-                        <p className="text-center text-gray-500 py-8">No hay reservas registradas para este servicio</p>
-                    ) : (
-                        <div className="space-y-4">
-                            {appointments.map((appointment) => (
-                                <div
-                                    key={appointment.id}
-                                    className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors"
-                                >
-                                    <div className="flex items-start justify-between">
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="font-semibold text-gray-900">{appointment.client}</h3>
-                                                <span
-                                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                                                        appointment.status === 'confirmed'
-                                                            ? 'bg-green-100 text-green-800'
-                                                            : appointment.status === 'pending'
-                                                            ? 'bg-yellow-100 text-yellow-800'
-                                                            : appointment.status === 'completed'
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : 'bg-red-100 text-red-800'
-                                                    }`}
-                                                >
-                                                    {appointment.status === 'confirmed'
-                                                        ? 'Confirmado'
-                                                        : appointment.status === 'pending'
-                                                        ? 'Pendiente'
-                                                        : appointment.status === 'completed'
-                                                        ? 'Completado'
-                                                        : 'Cancelado'}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-3 text-sm">
-                                                <div className="flex items-center text-gray-600">
-                                                    <Calendar size={16} className="mr-2" />
-                                                    {format(new Date(appointment.date), 'dd MMM yyyy', { locale: es })} a las {appointment.time}
-                                                </div>
-                                                <div className="flex items-center text-gray-600">
-                                                    <DollarSign size={16} className="mr-2" />
-                                                    ${appointment.quotedAmount.toLocaleString('es-MX')}
-                                                </div>
-                                                {appointment.peopleCount > 0 && (
-                                                    <div className="flex items-center text-gray-600">
-                                                        👥 {appointment.peopleCount} personas
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {appointment.comments && (
-                                                <p className="text-sm text-gray-600 mt-2 italic">"{appointment.comments}"</p>
-                                            )}
+                {/* Content Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column - Info & Stats */}
+                    <div className="space-y-8">
+                        {/* Service Details */}
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div className="p-6 border-b border-gray-100 bg-gray-50/50">
+                                <h2 className="text-lg font-bold text-gray-900">Detalles del Servicio</h2>
+                            </div>
+                            <div className="p-6 space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-green-50 p-4 rounded-xl border border-green-100">
+                                        <div className="flex items-center gap-2 text-green-700 mb-1">
+                                            <DollarSign size={18} />
+                                            <span className="text-sm font-medium">Precio</span>
                                         </div>
+                                        <p className="text-2xl font-bold text-green-800">
+                                            ${service.price.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                        </p>
+                                    </div>
+                                    <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                                        <div className="flex items-center gap-2 text-blue-700 mb-1">
+                                            <Clock size={18} />
+                                            <span className="text-sm font-medium">Duración</span>
+                                        </div>
+                                        <p className="text-2xl font-bold text-blue-800">
+                                            {service.duration} min
+                                        </p>
                                     </div>
                                 </div>
-                            ))}
+
+                                {service.description && (
+                                    <div className="pt-4 border-t border-gray-100">
+                                        <p className="text-sm font-medium text-gray-500 mb-3">Descripción</p>
+                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 text-gray-700 text-sm leading-relaxed">
+                                            {service.description}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    )}
+
+                        {/* Performance Stats */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
+                                        <Calendar size={18} />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-500">Reservas</span>
+                                </div>
+                                <p className="text-2xl font-bold text-gray-900">{stats.totalBookings}</p>
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+                                <div className="flex items-center gap-3 mb-3">
+                                    <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                                        <TrendingUp size={18} />
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-500">Clientes</span>
+                                </div>
+                                <p className="text-2xl font-bold text-gray-900">{stats.uniqueClients}</p>
+                            </div>
+                            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 col-span-2">
+                                <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg">
+                                            <DollarSign size={18} />
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-500">Ingresos Totales</span>
+                                    </div>
+                                </div>
+                                <p className="text-3xl font-bold text-gray-900">
+                                    ${stats.totalRevenue.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right Column - History */}
+                    <div className="lg:col-span-2">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 h-full">
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50 rounded-t-2xl">
+                                <h2 className="text-lg font-bold text-gray-900">Historial de Reservas</h2>
+                                <button
+                                    onClick={() => router.push('/dashboard')}
+                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-all shadow-sm hover:shadow text-sm font-medium"
+                                >
+                                    <Plus size={16} />
+                                    Nueva Cita
+                                </button>
+                            </div>
+                            <div className="p-6">
+                                {appointments.length === 0 ? (
+                                    <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                                        <Package className="mx-auto h-12 w-12 text-gray-300 mb-3" />
+                                        <p className="text-gray-500 font-medium">No hay reservas registradas</p>
+                                        <p className="text-sm text-gray-400 mt-1">Las reservas aparecerán aquí cuando se agenden</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {appointments.map((appointment) => (
+                                            <div
+                                                key={appointment.id}
+                                                className="group bg-white border border-gray-100 rounded-xl p-5 hover:shadow-md hover:border-purple-200 transition-all duration-200 relative overflow-hidden"
+                                            >
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${
+                                                    appointment.status === 'confirmed' ? 'bg-green-500' :
+                                                    appointment.status === 'pending' ? 'bg-yellow-500' :
+                                                    appointment.status === 'completed' ? 'bg-blue-500' : 'bg-red-500'
+                                                }`} />
+                                                
+                                                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pl-2">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <h3 className="font-bold text-gray-900 text-lg">{appointment.client}</h3>
+                                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                                                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                                                appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                                appointment.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                                                'bg-red-100 text-red-700'
+                                                            }`}>
+                                                                {appointment.status === 'confirmed' ? 'Confirmado' :
+                                                                 appointment.status === 'pending' ? 'Pendiente' :
+                                                                 appointment.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-gray-600 mt-3">
+                                                            <div className="flex items-center gap-2">
+                                                                <Calendar size={16} className="text-gray-400" />
+                                                                <span className="font-medium text-gray-700">
+                                                                    {format(new Date(appointment.date), 'dd MMM yyyy', { locale: es })}
+                                                                </span>
+                                                                <span className="text-gray-400">•</span>
+                                                                <span>{appointment.time}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <DollarSign size={16} className="text-gray-400" />
+                                                                <span className="font-medium text-gray-900">
+                                                                    ${appointment.quotedAmount.toLocaleString('es-MX')}
+                                                                </span>
+                                                            </div>
+                                                            {appointment.peopleCount > 0 && (
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="text-gray-400">👥</span>
+                                                                    <span>{appointment.peopleCount} personas</span>
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {appointment.comments && (
+                                                            <div className="mt-4 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                                                                <p className="text-sm text-gray-600 italic">"{appointment.comments}"</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 

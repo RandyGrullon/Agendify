@@ -7,6 +7,31 @@ import { es } from 'date-fns/locale';
 import { AgendaItem } from '@/types';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 
+// Helper function to safely parse dates
+const parseDateTime = (dateString: string | number | undefined | null, timeString: string | undefined | null): Date => {
+    if (!dateString || !timeString) return new Date();
+    
+    try {
+        let cleanDate: string;
+        
+        // Handle Excel serial dates
+        if (typeof dateString === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            const tempDate = new Date(excelEpoch.getTime() + dateString * 86400000);
+            cleanDate = tempDate.toISOString().split('T')[0];
+        } else {
+            cleanDate = dateString.includes('T') ? dateString.split('T')[0] : dateString;
+        }
+        
+        const date = new Date(`${cleanDate}T${timeString}`);
+        if (!isNaN(date.getTime())) return date;
+        
+        return new Date();
+    } catch {
+        return new Date();
+    }
+};
+
 const locales = {
     'es': es,
 };
@@ -40,7 +65,7 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
     }, []);
 
     const events = items.map(item => {
-        const start = new Date(`${item.date}T${item.time}`);
+        const start = parseDateTime(item.date, item.time);
         // Assuming 1 hour duration if not specified, or use service duration if we had it linked
         // For now, let's default to 1 hour
         const end = new Date(start.getTime() + 60 * 60 * 1000);

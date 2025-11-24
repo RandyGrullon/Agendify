@@ -22,6 +22,49 @@ const statusConfig = {
     cancelled: { bg: 'bg-red-100', text: 'text-red-800', label: 'Cancelado' },
 };
 
+// Helper function to safely parse dates
+const parseDate = (dateString: string | number | undefined | null): Date => {
+    // Return current date if no date provided
+    if (!dateString) {
+        return new Date();
+    }
+    
+    try {
+        // If it's a number (Excel serial date), convert it
+        if (typeof dateString === 'number') {
+            // Excel dates are days since 1900-01-01 (with a bug for 1900 being a leap year)
+            const excelEpoch = new Date(1899, 11, 30); // December 30, 1899
+            const date = new Date(excelEpoch.getTime() + dateString * 86400000);
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+        }
+        
+        // Convert to string for further processing
+        const dateStr = String(dateString);
+        
+        // If already includes time, parse directly
+        if (dateStr.includes('T')) {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) {
+                return date;
+            }
+        }
+        
+        // Try to parse as YYYY-MM-DD format
+        const date = new Date(dateStr + 'T00:00:00');
+        if (!isNaN(date.getTime())) {
+            return date;
+        }
+        
+        // If all parsing fails, return current date
+        return new Date();
+    } catch (error) {
+        console.error('Error parsing date:', dateString, error);
+        return new Date();
+    }
+};
+
 export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onDownloadReceipt, onStatusChange }: AgendaTableProps) {
     const [isMobile, setIsMobile] = useState(false);
 
@@ -84,7 +127,7 @@ export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onDo
                                 <div className="flex items-center gap-4 text-sm">
                                     <div className="flex items-center gap-2 text-gray-700">
                                         <Calendar size={16} className="text-gray-400" />
-                                        <span>{format(new Date(item.date + 'T00:00:00'), "d MMM yyyy", { locale: es })}</span>
+                                        <span>{format(parseDate(item.date), "d MMM yyyy", { locale: es })}</span>
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-700">
                                         <Clock size={16} className="text-gray-400" />
@@ -220,7 +263,7 @@ export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onDo
                                 <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="text-sm font-medium text-gray-900">
-                                            {format(new Date(item.date + 'T00:00:00'), "d MMM yyyy", { locale: es })}
+                                            {format(parseDate(item.date), "d MMM yyyy", { locale: es })}
                                         </div>
                                         <div className="text-sm text-gray-500">{item.time}</div>
                                     </td>

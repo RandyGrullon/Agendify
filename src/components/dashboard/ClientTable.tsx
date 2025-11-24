@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Edit, Trash2, Eye, Phone, Mail, MapPin } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Edit, Trash2, Eye, Phone, Mail, MapPin, Calendar } from 'lucide-react';
 import { Client } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -17,6 +17,14 @@ interface ClientTableProps {
 export default function ClientTable({ clients, onEdit, onDelete, searchTerm = '' }: ClientTableProps) {
     const router = useRouter();
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 768);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     const filteredClients = clients.filter((client) => {
         const search = searchTerm.toLowerCase();
@@ -54,6 +62,117 @@ export default function ClientTable({ clients, onEdit, onDelete, searchTerm = ''
         );
     }
 
+    // Mobile Card View
+    if (isMobile) {
+        return (
+            <div className="space-y-4">
+                {filteredClients.map((client) => (
+                    <div
+                        key={client.id}
+                        className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden"
+                    >
+                        {/* Header */}
+                        <div 
+                            className="bg-gray-50 px-4 py-3 border-b border-gray-200 cursor-pointer"
+                            onClick={() => handleViewDetails(client.id)}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="flex-shrink-0 h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span className="text-blue-600 font-semibold text-lg">
+                                        {client.name.charAt(0).toUpperCase()}
+                                    </span>
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-semibold text-gray-900 truncate">{client.name}</h3>
+                                    <div className="flex items-center text-xs text-gray-500 mt-1">
+                                        <Calendar size={12} className="mr-1" />
+                                        {format(new Date(client.createdAt), 'dd MMM yyyy', { locale: es })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Body */}
+                        <div className="px-4 py-3 space-y-3">
+                            {/* Contact Info */}
+                            <div className="space-y-2">
+                                {client.email && (
+                                    <a 
+                                        href={`mailto:${client.email}`}
+                                        className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Mail size={14} className="mr-2 text-gray-400 flex-shrink-0" />
+                                        <span className="truncate">{client.email}</span>
+                                    </a>
+                                )}
+                                {client.phone && (
+                                    <a 
+                                        href={`tel:${client.phone}`}
+                                        className="flex items-center text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <Phone size={14} className="mr-2 text-gray-400 flex-shrink-0" />
+                                        <span>{client.phone}</span>
+                                    </a>
+                                )}
+                                {client.address && (
+                                    <div className="flex items-start text-sm text-gray-600">
+                                        <MapPin size={14} className="mr-2 mt-0.5 text-gray-400 flex-shrink-0" />
+                                        <span className="line-clamp-2">{client.address}</span>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Notes */}
+                            {client.notes && (
+                                <div className="bg-gray-50 rounded-lg p-3">
+                                    <p className="text-sm text-gray-600 line-clamp-2">{client.notes}</p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Actions */}
+                        <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewDetails(client.id);
+                                }}
+                                className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-lg transition-colors"
+                                title="Ver detalles"
+                            >
+                                <Eye size={18} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit(client);
+                                }}
+                                className="p-2 text-yellow-600 hover:text-yellow-900 hover:bg-yellow-100 rounded-lg transition-colors"
+                                title="Editar"
+                            >
+                                <Edit size={18} />
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDelete(client.id);
+                                }}
+                                className="p-2 text-red-600 hover:text-red-900 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50"
+                                title="Eliminar"
+                                disabled={deletingId === client.id}
+                            >
+                                <Trash2 size={18} />
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+
+    // Desktop Table View
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">

@@ -11,6 +11,7 @@ import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToServices } from "@/services/service";
 import { useAuth } from "@/components/providers/AuthProvider";
 import ClientForm from "./ClientForm";
+import ServiceForm from "./ServiceForm";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -54,6 +55,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const [clientQuery, setClientQuery] = useState("");
     const [serviceQuery, setServiceQuery] = useState("");
     const [isClientFormOpen, setIsClientFormOpen] = useState(false);
+    const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
 
     const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema) as any,
@@ -169,6 +171,13 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
             toast.error('Error al crear cliente');
             throw error;
         }
+    };
+
+    const handleCreateService = (service: Service) => {
+        setSelectedService(service);
+        setValue('service', service.name);
+        setValue('quotedAmount', service.price);
+        setValue('myProfit', service.price);
     };
 
     const handleFormSubmit = (data: FormData) => {
@@ -381,14 +390,14 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                         afterLeave={() => setServiceQuery('')}
                                                                     >
                                                                         <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-10">
-                                                                            <Link
-                                                                                href="/services"
-                                                                                target="_blank"
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={() => setIsServiceFormOpen(true)}
                                                                                 className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b border-gray-200"
                                                                             >
                                                                                 <Plus size={16} />
-                                                                                Gestionar servicios
-                                                                            </Link>
+                                                                                Crear nuevo servicio
+                                                                            </button>
                                                                             {filteredServices.length === 0 && serviceQuery !== '' ? (
                                                                                 <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
                                                                                     No se encontraron servicios.
@@ -532,6 +541,12 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
             onClose={() => setIsClientFormOpen(false)}
             onSubmit={handleCreateClient}
             title="Crear Cliente Rápido"
+        />
+
+        <ServiceForm
+            isOpen={isServiceFormOpen}
+            onClose={() => setIsServiceFormOpen(false)}
+            onSuccess={handleCreateService}
         />
         </>
     );

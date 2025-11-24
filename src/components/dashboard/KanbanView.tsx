@@ -6,6 +6,34 @@ import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MapPin, Clock, DollarSign, User } from 'lucide-react';
 
+// Helper function to safely parse dates
+const parseDate = (dateString: string | number | undefined | null): Date => {
+    if (!dateString) return new Date();
+    
+    try {
+        // Handle Excel serial dates
+        if (typeof dateString === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            const date = new Date(excelEpoch.getTime() + dateString * 86400000);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        const dateStr = String(dateString);
+        
+        if (dateStr.includes('T')) {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        const date = new Date(dateStr + 'T00:00:00');
+        if (!isNaN(date.getTime())) return date;
+        
+        return new Date();
+    } catch {
+        return new Date();
+    }
+};
+
 interface KanbanViewProps {
     items: AgendaItem[];
     onStatusChange: (itemId: string, newStatus: AgendaItem['status']) => void;
@@ -96,7 +124,7 @@ export default function KanbanView({ items, onStatusChange, onEventClick }: Kanb
                                                         
                                                         <div className="flex items-center gap-2">
                                                             <Clock size={14} className="text-gray-400" />
-                                                            <span>{format(new Date(item.date + 'T00:00:00'), "d MMM", { locale: es })}</span>
+                                                            <span>{format(parseDate(item.date), "d MMM", { locale: es })}</span>
                                                         </div>
 
                                                         {item.location && (

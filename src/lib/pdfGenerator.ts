@@ -4,6 +4,34 @@ import { AgendaItem, BusinessSettings } from '@/types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
+// Helper function to safely parse dates
+const parseDate = (dateString: string | number | undefined | null): Date => {
+    if (!dateString) return new Date();
+    
+    try {
+        // Handle Excel serial dates
+        if (typeof dateString === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            const date = new Date(excelEpoch.getTime() + dateString * 86400000);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        const dateStr = String(dateString);
+        
+        if (dateStr.includes('T')) {
+            const date = new Date(dateStr);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        const date = new Date(dateStr + 'T00:00:00');
+        if (!isNaN(date.getTime())) return date;
+        
+        return new Date();
+    } catch {
+        return new Date();
+    }
+};
+
 export const generateReceipt = (item: AgendaItem, settings: BusinessSettings | null) => {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.width;
@@ -43,7 +71,7 @@ export const generateReceipt = (item: AgendaItem, settings: BusinessSettings | n
     // Receipt Info (Right side)
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
-    const dateStr = format(new Date(item.date + 'T00:00:00'), "d 'de' MMMM, yyyy", { locale: es });
+    const dateStr = format(parseDate(item.date), "d 'de' MMMM, yyyy", { locale: es });
     
     doc.text('RECIBO', pageWidth - 20, 20, { align: 'right' });
     doc.setFontSize(10);

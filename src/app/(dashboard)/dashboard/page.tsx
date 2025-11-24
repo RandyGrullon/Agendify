@@ -56,11 +56,31 @@ export default function DashboardPage() {
         // Date range filter
         if (dateFrom && dateTo) {
             filtered = filtered.filter(item => {
-                const itemDate = new Date(item.date);
-                return isWithinInterval(itemDate, {
-                    start: new Date(dateFrom),
-                    end: new Date(dateTo)
-                });
+                try {
+                    if (!item.date) return false;
+                    
+                    let dateStr: string;
+                    
+                    // Handle Excel serial dates
+                    if (typeof item.date === 'number') {
+                        const excelEpoch = new Date(1899, 11, 30);
+                        const tempDate = new Date(excelEpoch.getTime() + item.date * 86400000);
+                        dateStr = tempDate.toISOString().split('T')[0];
+                    } else {
+                        dateStr = item.date.includes('T') ? item.date.split('T')[0] : item.date;
+                    }
+                    
+                    const itemDate = new Date(dateStr + 'T00:00:00');
+                    
+                    if (isNaN(itemDate.getTime())) return false;
+                    
+                    return isWithinInterval(itemDate, {
+                        start: new Date(dateFrom),
+                        end: new Date(dateTo)
+                    });
+                } catch {
+                    return false;
+                }
             });
         }
 
@@ -81,7 +101,7 @@ export default function DashboardPage() {
         const uniqueClients = new Set(filteredItems.map(i => i.client)).size;
         
         const pendingPayment = filteredItems
-            .filter(i => i.status !== 'cancelled' && i.status !== 'completed')
+            .filter(i => i.status === 'pending' || i.status === 'confirmed')
             .reduce((sum, i) => sum + (i.quotedAmount - (i.deposit || 0)), 0);
 
         return { total, confirmed, pending, totalRevenue, totalProfit, uniqueClients, pendingPayment };
@@ -158,6 +178,7 @@ export default function DashboardPage() {
         // Format data for export
         const exportData = filteredItems.map(item => {
             const porCobrar = item.quotedAmount - (item.deposit || 0);
+            const showPorCobrar = porCobrar > 0 && (item.status === 'pending' || item.status === 'confirmed');
             return {
                 'Fecha': item.date,
                 'Hora': item.time,
@@ -170,7 +191,7 @@ export default function DashboardPage() {
                 'Ubicación': item.location || '',
                 'Monto Cotizado': item.quotedAmount,
                 'Abono': item.deposit || 0,
-                ...(porCobrar > 0 && { 'Por Cobrar': porCobrar }),
+                ...(showPorCobrar && { 'Por Cobrar': porCobrar }),
                 'Mi Ganancia': item.myProfit,
                 'Pago Colaborador': item.collaboratorPayment,
                 'Colaborador': item.collaborator || '',

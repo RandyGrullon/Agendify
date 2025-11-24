@@ -41,5 +41,15 @@ service cloud.firestore {
       allow delete: if request.auth != null && request.auth.uid == userId
                     && resource.data.userId == userId;
     }
+    
+    // Business Settings
+    match /settings/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && request.resource.data.userId == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && resource.data.userId == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId;
+    }
   }
 }
