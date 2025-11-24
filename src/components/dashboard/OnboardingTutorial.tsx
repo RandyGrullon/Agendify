@@ -124,7 +124,7 @@ export default function OnboardingTutorial() {
 
                     {/* Step Content */}
                     <div className="text-center mb-8">
-                        <p className="text-gray-600 text-lg leading-relaxed">
+                        <div className="text-gray-600 text-lg leading-relaxed">
                             {currentStep === 0 && (
                                 <>
                                     Con Agendify puedes:
@@ -208,7 +208,7 @@ export default function OnboardingTutorial() {
                                     </ul>
                                 </>
                             )}
-                        </p>
+                        </div>
                     </div>
 
                     {/* Navigation Buttons */}

@@ -246,65 +246,65 @@ export default function DashboardPage() {
 
             {/* Summary Cards */}
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 overflow-hidden transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Total Citas</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.total}</p>
+                        <div className="min-w-0 flex-1 mr-4">
+                            <p className="text-sm font-medium text-gray-600 truncate" title="Total Citas">Total Citas</p>
+                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate">{stats.total}</p>
                         </div>
-                        <div className="p-3 bg-blue-100 rounded-full">
+                        <div className="p-3 bg-blue-100 rounded-full flex-shrink-0">
                             <CalendarIcon className="h-6 w-6 text-blue-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 overflow-hidden transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Confirmadas</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.confirmed}</p>
+                        <div className="min-w-0 flex-1 mr-4">
+                            <p className="text-sm font-medium text-gray-600 truncate" title="Confirmadas">Confirmadas</p>
+                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate">{stats.confirmed}</p>
                         </div>
-                        <div className="p-3 bg-green-100 rounded-full">
+                        <div className="p-3 bg-green-100 rounded-full flex-shrink-0">
                             <TrendingUp className="h-6 w-6 text-green-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 overflow-hidden transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Clientes Únicos</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2">{stats.uniqueClients}</p>
+                        <div className="min-w-0 flex-1 mr-4">
+                            <p className="text-sm font-medium text-gray-600 truncate" title="Clientes Únicos">Clientes Únicos</p>
+                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate">{stats.uniqueClients}</p>
                         </div>
-                        <div className="p-3 bg-purple-100 rounded-full">
+                        <div className="p-3 bg-purple-100 rounded-full flex-shrink-0">
                             <Users className="h-6 w-6 text-purple-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 overflow-hidden transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Ganancia Total</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2">
+                        <div className="min-w-0 flex-1 mr-4">
+                            <p className="text-sm font-medium text-gray-600 truncate" title="Ganancia Total">Ganancia Total</p>
+                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate" title={`$${stats.totalProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}>
                                 ${stats.totalProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </p>
                         </div>
-                        <div className="p-3 bg-yellow-100 rounded-full">
+                        <div className="p-3 bg-yellow-100 rounded-full flex-shrink-0">
                             <DollarSign className="h-6 w-6 text-yellow-600" />
                         </div>
                     </div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500">
+                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500 overflow-hidden transition-all hover:shadow-md">
                     <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-medium text-gray-600">Por Cobrar</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2">
+                        <div className="min-w-0 flex-1 mr-4">
+                            <p className="text-sm font-medium text-gray-600 truncate" title="Por Cobrar">Por Cobrar</p>
+                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate" title={`$${stats.pendingPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}>
                                 ${stats.pendingPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                             </p>
                         </div>
-                        <div className="p-3 bg-red-100 rounded-full">
+                        <div className="p-3 bg-red-100 rounded-full flex-shrink-0">
                             <AlertCircle className="h-6 w-6 text-red-600" />
                         </div>
                     </div>
