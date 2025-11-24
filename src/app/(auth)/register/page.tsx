@@ -34,24 +34,51 @@ export default function RegisterPage() {
     const onSubmit = async (data: FormData) => {
         setIsLoading(true);
         try {
+            // 1. Create Authentication User
             const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
+            
+            // 2. Update Profile Name
             await updateProfile(userCredential.user, {
                 displayName: data.name,
             });
 
-            // Create user document in Firestore
-            await setDoc(doc(db, "users", userCredential.user.uid), {
-                uid: userCredential.user.uid,
-                email: data.email,
-                displayName: data.name,
-                role: 'owner',
-                createdAt: Date.now(),
-            });
+            // 3. Create User Document in Firestore
+            try {
+                await setDoc(doc(db, "users", userCredential.user.uid), {
+                    uid: userCredential.user.uid,
+                    email: data.email,
+                    displayName: data.name,
+                    role: 'owner',
+                    createdAt: Date.now(),
+                    settings: {
+                        currency: 'USD',
+                        language: 'es',
+                        theme: 'light'
+                    }
+                });
+            } catch (firestoreError) {
+                console.error("Error creating user document:", firestoreError);
+                // Continue even if Firestore fails, as Auth is successful
+                // We can retry creating the document later or handle it in the dashboard
+            }
 
             toast.success("Cuenta creada exitosamente");
-            router.push("/dashboard");
+            router.replace("/dashboard"); // Use replace to prevent going back to register
         } catch (error: any) {
-            toast.error("Error al registrarse: " + error.message);
+            console.error("Registration error:", error);
+            let errorMessage = "Error al registrarse";
+            
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = "Este correo electrónico ya está registrado";
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = "El correo electrónico no es válido";
+            } else if (error.code === 'auth/weak-password') {
+                errorMessage = "La contraseña es muy débil";
+            } else if (error.code === 'auth/network-request-failed') {
+                errorMessage = "Error de conexión. Verifica tu internet";
+            }
+
+            toast.error(errorMessage);
         } finally {
             setIsLoading(false);
         }

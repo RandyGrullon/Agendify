@@ -23,6 +23,8 @@ export default function DashboardPage() {
     const [items, setItems] = useState<AgendaItem[]>([]);
     const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
     
+    const [isFormOpen, setIsFormOpen] = useState(false);
+
     // Only keep necessary state for metrics and basic list
     useEffect(() => {
         if (user) {
@@ -60,12 +62,32 @@ export default function DashboardPage() {
         return { total, confirmed, pending, totalRevenue, totalProfit, uniqueClients, pendingPayment };
     }, [items]);
 
+    const handleCreate = async (data: any) => {
+        if (!user) return;
+        try {
+            await addAgendaItem(user.uid, data);
+            setIsFormOpen(false);
+            toast.success("Cita creada");
+        } catch (error) {
+            toast.error("Error al crear cita");
+        }
+    };
+
     return (
         <div className="p-6 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-                <p className="text-gray-600">Resumen general de tu negocio</p>
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+                    <p className="text-gray-600">Resumen general de tu negocio</p>
+                </div>
+                <button
+                    onClick={() => setIsFormOpen(true)}
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                >
+                    <Plus size={20} />
+                    <span className="font-medium">Nueva Cita</span>
+                </button>
             </div>
 
             {/* Summary Cards */}
@@ -195,6 +217,13 @@ export default function DashboardPage() {
                     </a>
                 </div>
             </div>
+
+            {/* Dialogs */}
+            <AgendaForm
+                isOpen={isFormOpen}
+                onClose={() => setIsFormOpen(false)}
+                onSubmit={handleCreate}
+            />
         </div>
     );
 }
