@@ -28,6 +28,7 @@ interface ClientFormProps {
     onSubmit: (data: Omit<Client, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => Promise<void>;
     initialData?: Client | null;
     title?: string;
+    initialName?: string;
 }
 
 export default function ClientForm({
@@ -36,6 +37,7 @@ export default function ClientForm({
     onSubmit,
     initialData,
     title = 'Nuevo Cliente',
+    initialName = '',
 }: ClientFormProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,20 +48,20 @@ export default function ClientForm({
         formState: { errors },
     } = useForm<ClientFormData>({
         resolver: zodResolver(clientSchema),
-        defaultValues: initialData || {},
+        defaultValues: initialData || { name: initialName },
     });
 
     useEffect(() => {
         if (isOpen) {
             reset(initialData || {
-                name: '',
+                name: initialName,
                 email: '',
                 phone: '',
                 address: '',
                 notes: '',
             });
         }
-    }, [isOpen, initialData, reset]);
+    }, [isOpen, initialData, reset, initialName]);
 
     const handleFormSubmit = async (data: ClientFormData) => {
         setIsSubmitting(true);

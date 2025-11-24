@@ -25,14 +25,15 @@ interface ServiceFormProps {
     onClose: () => void;
     serviceToEdit?: Service | null;
     onSuccess?: (service: Service) => void;
+    initialName?: string;
 }
 
-export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess }: ServiceFormProps) {
+export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess, initialName = '' }: ServiceFormProps) {
     const { user } = useAuth();
     const { register, handleSubmit, reset, setValue, formState: { errors, isSubmitting } } = useForm<ServiceFormData>({
         resolver: zodResolver(serviceSchema),
         defaultValues: {
-            name: '',
+            name: initialName,
             description: '',
             price: 0,
             duration: 60,
@@ -40,20 +41,22 @@ export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess 
     });
 
     useEffect(() => {
-        if (serviceToEdit) {
-            setValue('name', serviceToEdit.name);
-            setValue('description', serviceToEdit.description || '');
-            setValue('price', serviceToEdit.price);
-            setValue('duration', serviceToEdit.duration);
-        } else {
-            reset({
-                name: '',
-                description: '',
-                price: 0,
-                duration: 60,
-            });
+        if (isOpen) {
+            if (serviceToEdit) {
+                setValue('name', serviceToEdit.name);
+                setValue('description', serviceToEdit.description || '');
+                setValue('price', serviceToEdit.price);
+                setValue('duration', serviceToEdit.duration);
+            } else {
+                reset({
+                    name: initialName || '',
+                    description: '',
+                    price: 0,
+                    duration: 60,
+                });
+            }
         }
-    }, [serviceToEdit, setValue, reset, isOpen]);
+    }, [isOpen, serviceToEdit, setValue, reset, initialName]);
 
     const onSubmit = async (data: ServiceFormData) => {
         if (!user) return;

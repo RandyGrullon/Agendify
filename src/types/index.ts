@@ -52,6 +52,33 @@ export interface Service {
     updatedAt: number;
 }
 
+export interface InvoiceItem {
+    description: string;
+    quantity: number;
+    price: number;
+}
+
+export interface Invoice {
+    id: string;
+    userId: string;
+    number: string; // e.g. "INV-001"
+    clientId: string;
+    clientName: string;
+    clientEmail?: string;
+    clientAddress?: string;
+    date: number;
+    dueDate?: number;
+    status: 'draft' | 'pending' | 'paid' | 'cancelled';
+    items: InvoiceItem[];
+    subtotal: number;
+    tax: number;
+    total: number;
+    notes?: string;
+    relatedAppointmentId?: string;
+    createdAt: number;
+    updatedAt: number;
+}
+
 export interface BusinessSettings {
     id?: string; // Firestore ID
     userId: string;

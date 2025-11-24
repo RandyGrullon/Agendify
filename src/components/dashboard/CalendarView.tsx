@@ -129,13 +129,13 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
                                 onStatusChange(item.id, e.target.value as AgendaItem['status']);
                             }}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-[10px] px-1 py-0 bg-white/90 border border-white rounded cursor-pointer focus:ring-1 focus:ring-white"
+                            className="text-[10px] px-1.5 py-0.5 bg-white text-gray-900 border border-gray-300 rounded cursor-pointer focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-medium shadow-sm"
                             title="Cambiar estado"
                         >
-                            <option value="pending">⏳</option>
-                            <option value="confirmed">✓</option>
-                            <option value="completed">✔</option>
-                            <option value="cancelled">✗</option>
+                            <option value="pending">Pendiente</option>
+                            <option value="confirmed">Confirmado</option>
+                            <option value="completed">Completado</option>
+                            <option value="cancelled">Cancelado</option>
                         </select>
                     )}
                 </div>
@@ -154,47 +154,47 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
         const goToToday = () => toolbar.onNavigate('TODAY');
 
         return (
-            <div className="flex flex-col gap-3 mb-4">
-                <div className="flex items-center justify-between">
-                    <h2 className="text-lg md:text-xl font-bold text-gray-900">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-xl p-4 mb-4 border-b-2 border-blue-100">
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         {toolbar.label}
                     </h2>
                     <div className="flex gap-2">
                         <button
                             onClick={goToBack}
-                            className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            className="px-4 py-2 text-sm font-medium bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg transition-all shadow-sm hover:shadow border border-gray-200 hover:border-blue-300"
                         >
-                            ←
+                            ← Anterior
                         </button>
                         <button
                             onClick={goToToday}
-                            className="px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors hidden md:block"
+                            className="px-4 py-2 text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all shadow-md hover:shadow-lg hidden md:block"
                         >
                             Hoy
                         </button>
                         <button
                             onClick={goToNext}
-                            className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            className="px-4 py-2 text-sm font-medium bg-white hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-lg transition-all shadow-sm hover:shadow border border-gray-200 hover:border-blue-300"
                         >
-                            →
+                            Siguiente →
                         </button>
                     </div>
                 </div>
                 {!isMobile && (
                     <div className="flex gap-2">
                         {[
-                            { view: Views.MONTH, label: 'Mes' },
-                            { view: Views.WEEK, label: 'Semana' },
-                            { view: Views.DAY, label: 'Día' },
-                            { view: Views.AGENDA, label: 'Agenda' },
+                            { view: Views.MONTH, label: '📅 Mes' },
+                            { view: Views.WEEK, label: '📊 Semana' },
+                            { view: Views.DAY, label: '📆 Día' },
+                            { view: Views.AGENDA, label: '📋 Agenda' },
                         ].map(({ view: v, label }) => (
                             <button
                                 key={v}
                                 onClick={() => toolbar.onView(v)}
-                                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
                                     toolbar.view === v
-                                        ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md'
+                                        : 'bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 hover:border-blue-300'
                                 }`}
                             >
                                 {label}
@@ -207,7 +207,7 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
     };
 
     return (
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
             <style jsx global>{`
                 .rbc-calendar {
                     font-family: inherit;
@@ -220,18 +220,21 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
                     }
                     
                     .rbc-header {
-                        padding: 8px 2px;
+                        padding: 10px 4px;
                         font-size: 11px;
                         font-weight: 600;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
                     }
                     
                     .rbc-date-cell {
-                        padding: 4px;
-                        font-size: 12px;
+                        padding: 6px;
+                        font-size: 13px;
+                        font-weight: 500;
                     }
                     
                     .rbc-event {
-                        padding: 2px 4px;
+                        padding: 3px 6px;
                         font-size: 10px;
                     }
                     
@@ -240,7 +243,7 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
                     }
                     
                     .rbc-month-row {
-                        min-height: 60px;
+                        min-height: 70px;
                     }
                     
                     .rbc-day-bg + .rbc-day-bg {
@@ -254,66 +257,146 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
                 
                 /* Desktop styles */
                 .rbc-header {
-                    padding: 12px;
-                    font-weight: 600;
-                    color: #374151;
-                    background: #f9fafb;
+                    padding: 16px 12px;
+                    font-weight: 700;
+                    font-size: 13px;
+                    color: #1f2937;
+                    background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
                     border-bottom: 2px solid #e5e7eb;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
                 }
                 
                 .rbc-today {
-                    background-color: #eff6ff;
+                    background: linear-gradient(135deg, #dbeafe 0%, #eff6ff 100%);
                 }
                 
                 .rbc-off-range-bg {
-                    background-color: #f9fafb;
+                    background-color: #fafafa;
+                }
+                
+                .rbc-date-cell {
+                    padding: 8px;
+                    font-weight: 500;
+                    transition: all 0.2s ease;
+                }
+                
+                .rbc-date-cell:hover {
+                    background-color: #f0f9ff;
+                }
+                
+                .rbc-date-cell.rbc-now {
+                    font-weight: 800;
+                    color: #2563eb;
+                }
+                
+                .rbc-date-cell a {
+                    color: #374151;
+                    transition: color 0.2s ease;
+                }
+                
+                .rbc-date-cell.rbc-now a {
+                    color: #2563eb;
                 }
                 
                 .rbc-event {
                     border: none;
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+                    transition: all 0.2s ease;
+                    border-radius: 6px;
+                    padding: 4px 8px;
                 }
                 
                 .rbc-event:hover {
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    transform: translateY(-1px);
                 }
                 
                 .rbc-selected {
-                    background-color: #2563eb !important;
+                    background-color: #1d4ed8 !important;
+                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4) !important;
                 }
                 
-                .rbc-date-cell {
-                    padding: 6px;
+                .rbc-day-bg {
+                    transition: background-color 0.2s ease;
                 }
                 
-                .rbc-date-cell.rbc-now {
-                    font-weight: 700;
-                    color: #2563eb;
+                .rbc-day-bg:hover {
+                    background-color: #f8fafc;
+                }
+                
+                .rbc-month-view {
+                    border: 1px solid #e5e7eb;
+                    border-radius: 12px;
+                    overflow: hidden;
+                }
+                
+                .rbc-month-row {
+                    border-color: #e5e7eb;
+                }
+                
+                .rbc-day-bg + .rbc-day-bg {
+                    border-left-color: #e5e7eb;
                 }
                 
                 .rbc-agenda-view {
-                    padding: 16px;
+                    padding: 20px;
                 }
                 
                 .rbc-agenda-view table {
                     border: 1px solid #e5e7eb;
-                    border-radius: 8px;
+                    border-radius: 12px;
                     overflow: hidden;
                 }
                 
                 .rbc-agenda-date-cell,
                 .rbc-agenda-time-cell {
-                    padding: 12px;
+                    padding: 14px 16px;
                     font-weight: 600;
+                    background: linear-gradient(to right, #f9fafb, #ffffff);
                 }
                 
                 .rbc-agenda-event-cell {
-                    padding: 12px;
+                    padding: 14px 16px;
+                }
+                
+                .rbc-time-view {
+                    border: 1px solid #e5e7eb;
+                    border-radius: 12px;
+                    overflow: hidden;
+                }
+                
+                .rbc-time-header {
+                    border-bottom: 2px solid #e5e7eb;
+                }
+                
+                .rbc-time-content {
+                    border-top: none;
+                }
+                
+                .rbc-current-time-indicator {
+                    background-color: #ef4444;
+                    height: 2px;
+                }
+                
+                .rbc-show-more {
+                    background-color: transparent;
+                    color: #2563eb;
+                    font-weight: 600;
+                    font-size: 11px;
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    transition: all 0.2s ease;
+                }
+                
+                .rbc-show-more:hover {
+                    background-color: #dbeafe;
+                    color: #1d4ed8;
                 }
             `}</style>
             
-            <div className="p-3 md:p-6">
-                <div className={`${isMobile ? 'h-[500px]' : 'h-[600px]'}`}>
+            <div className="p-4 md:p-6">
+                <div className={`${isMobile ? 'h-[500px]' : 'h-[650px]'}`}>
                     <Calendar
                         localizer={localizer}
                         events={events}
@@ -341,6 +424,13 @@ export default function CalendarView({ items, onEventClick, onStatusChange }: Ca
                         }}
                         eventPropGetter={eventStyleGetter}
                         onSelectEvent={(event) => onEventClick(event.resource)}
+                        selectable
+                        onSelectSlot={(slotInfo) => {
+                            if (view === Views.MONTH) {
+                                setDate(slotInfo.start);
+                                setView(Views.DAY);
+                            }
+                        }}
                         components={{
                             event: CustomEvent,
                             toolbar: CustomToolbar,

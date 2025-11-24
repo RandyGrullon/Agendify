@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, Home, Users, Settings, X, Scissors } from "lucide-react";
+import { Calendar, Home, Users, Settings, X, Scissors, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const navigation = [
@@ -11,6 +11,7 @@ const navigation = [
     { name: 'Citas', href: '/appointments', icon: Calendar },
     { name: 'Clientes', href: '/clients', icon: Users },
     { name: 'Servicios', href: '/services', icon: Scissors },
+    { name: 'Facturación', href: '/billing', icon: FileText },
     { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 

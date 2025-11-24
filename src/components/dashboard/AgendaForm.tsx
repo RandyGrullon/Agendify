@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { Fragment, useEffect, useState, useRef } from "react";
 import { Dialog, Transition, Combobox } from "@headlessui/react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,6 +56,9 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const [serviceQuery, setServiceQuery] = useState("");
     const [isClientFormOpen, setIsClientFormOpen] = useState(false);
     const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+    
+    const clientButtonRef = useRef<HTMLButtonElement>(null);
+    const serviceButtonRef = useRef<HTMLButtonElement>(null);
 
     const { register, handleSubmit, reset, setValue, watch, control, formState: { errors } } = useForm<FormData>({
         resolver: zodResolver(schema) as any,
@@ -96,46 +99,72 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     }, [user]);
 
     useEffect(() => {
-        if (initialData) {
-            Object.keys(initialData).forEach((key) => {
-                // @ts-ignore
-                setValue(key, initialData[key]);
-            });
-            
-            // Find and set the client
-            let client;
-            if (initialData.clientId) {
-                client = clients.find(c => c.id === initialData.clientId);
+        if (isOpen) {
+            if (initialData) {
+                Object.keys(initialData).forEach((key) => {
+                    // @ts-ignore
+                    setValue(key, initialData[key]);
+                });
+                
+                // Find and set the client
+                let client;
+                if (initialData.clientId) {
+                    client = clients.find(c => c.id === initialData.clientId);
+                }
+                if (!client) {
+                    client = clients.find(c => c.name === initialData.client);
+                }
+                if (client) {
+                    setSelectedClient(client);
+                }
+
+                // Find and set the service
+                const service = services.find(s => s.name === initialData.service);
+                if (service) {
+                    setSelectedService(service);
+                }
+            } else {
+                // Only reset if we are opening a fresh form, NOT if we are just receiving updates
+                // We check if the form is dirty to avoid overwriting user input if they started typing before lists loaded
+                // But simpler: just reset when isOpen becomes true and we have no initialData
+                reset({
+                    status: 'pending',
+                    peopleCount: 1,
+                    quotedAmount: 0,
+                    deposit: 0,
+                    myProfit: 0,
+                    collaboratorPayment: 0,
+                    date: new Date().toISOString().split('T')[0],
+                    time: '09:00',
+                    client: '',
+                    service: '',
+                });
+                setSelectedClient(null);
+                setSelectedService(null);
             }
-            if (!client) {
-                client = clients.find(c => c.name === initialData.client);
-            }
-            if (client) {
-                setSelectedClient(client);
+        }
+    }, [initialData, reset, setValue, isOpen]); // Removed clients and services from dependencies to prevent reset on list update
+    
+    // Separate effect to sync selected client/service when lists load (only for editing)
+    useEffect(() => {
+        if (initialData && isOpen) {
+            if (!selectedClient && clients.length > 0) {
+                let client;
+                if (initialData.clientId) {
+                    client = clients.find(c => c.id === initialData.clientId);
+                }
+                if (!client) {
+                    client = clients.find(c => c.name === initialData.client);
+                }
+                if (client) setSelectedClient(client);
             }
 
-            // Find and set the service
-            const service = services.find(s => s.name === initialData.service);
-            if (service) {
-                setSelectedService(service);
+            if (!selectedService && services.length > 0) {
+                const service = services.find(s => s.name === initialData.service);
+                if (service) setSelectedService(service);
             }
-        } else {
-            reset({
-                status: 'pending',
-                peopleCount: 1,
-                quotedAmount: 0,
-                deposit: 0,
-                myProfit: 0,
-                collaboratorPayment: 0,
-                date: new Date().toISOString().split('T')[0],
-                time: '09:00',
-                client: '',
-                service: '',
-            });
-            setSelectedClient(null);
-            setSelectedService(null);
         }
-    }, [initialData, reset, setValue, isOpen, clients, services]);
+    }, [clients, services, initialData, isOpen, selectedClient, selectedService]);
 
     const filteredClients = clientQuery === ""
         ? clients
@@ -155,29 +184,39 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
         if (!user) return;
 
         try {
-            await createClient(user.uid, clientData);
+            // Create the client in Firestore
+            const docRef = await createClient(user.uid, clientData);
+            
+            // Construct the full client object optimistically
+            const newClient: Client = {
+                ...clientData,
+                id: docRef.id,
+                userId: user.uid,
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+            };
+
             toast.success('Cliente creado exitosamente');
             
-            // The new client will be added to the list via the subscription
-            setTimeout(() => {
-                const newClient = clients.find(c => c.name === clientData.name);
-                if (newClient) {
-                    setSelectedClient(newClient);
-                    setValue('client', newClient.name);
-                }
-            }, 500);
+            // Immediately select the new client without waiting for subscription
+            setSelectedClient(newClient);
+            setValue('client', newClient.name);
+            setIsClientFormOpen(false);
+            
         } catch (error) {
             console.error('Error al crear cliente:', error);
             toast.error('Error al crear cliente');
-            throw error;
         }
     };
 
     const handleCreateService = (service: Service) => {
+        // Immediately select the new service
         setSelectedService(service);
         setValue('service', service.name);
         setValue('quotedAmount', service.price);
         setValue('myProfit', service.price);
+        setIsServiceFormOpen(false);
+        toast.success('Servicio creado y seleccionado');
     };
 
     const handleFormSubmit = (data: FormData) => {
@@ -265,79 +304,85 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                     field.onChange(client?.name || '');
                                                                 }}
                                                             >
-                                                                <div className="relative">
-                                                                    <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
-                                                                        <Combobox.Input
-                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
-                                                                            displayValue={(client: Client | null) => client?.name || ''}
-                                                                            onChange={(event) => setClientQuery(event.target.value)}
-                                                                            placeholder="Selecciona o busca un cliente"
-                                                                        />
-                                                                        <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                            <ChevronsUpDown
-                                                                                className="h-5 w-5 text-gray-400"
-                                                                                aria-hidden="true"
+                                                                {({ open }) => (
+                                                                    <div className="relative">
+                                                                        <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
+                                                                            <Combobox.Input
+                                                                                className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
+                                                                                displayValue={(client: Client | null) => client?.name || ''}
+                                                                                onChange={(event) => setClientQuery(event.target.value)}
+                                                                                onClick={() => !open && clientButtonRef.current?.click()}
+                                                                                placeholder="Selecciona o busca un cliente"
                                                                             />
-                                                                        </Combobox.Button>
-                                                                    </div>
-                                                                    <Transition
-                                                                        as={Fragment}
-                                                                        leave="transition ease-in duration-100"
-                                                                        leaveFrom="opacity-100"
-                                                                        leaveTo="opacity-0"
-                                                                        afterLeave={() => setClientQuery('')}
-                                                                    >
-                                                                        <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-10">
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setIsClientFormOpen(true)}
-                                                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b border-gray-200"
+                                                                            <Combobox.Button 
+                                                                                ref={clientButtonRef}
+                                                                                className="absolute inset-y-0 right-0 flex items-center pr-2"
                                                                             >
-                                                                                <UserPlus size={16} />
-                                                                                Crear nuevo cliente
-                                                                            </button>
-                                                                            {filteredClients.length === 0 && clientQuery !== '' ? (
-                                                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                                                                                    No se encontraron clientes.
-                                                                                </div>
-                                                                            ) : (
-                                                                                filteredClients.map((client) => (
-                                                                                    <Combobox.Option
-                                                                                        key={client.id}
-                                                                                        className={({ active }) =>
-                                                                                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                                                                active ? 'bg-blue-600 text-white' : 'text-gray-900'
-                                                                                            }`
-                                                                                        }
-                                                                                        value={client}
-                                                                                    >
-                                                                                        {({ selected, active }) => (
-                                                                                            <>
-                                                                                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                                                                                                    {client.name}
-                                                                                                </span>
-                                                                                                {client.phone && (
-                                                                                                    <span className={`block text-xs ${active ? 'text-blue-200' : 'text-gray-500'}`}>
-                                                                                                        {client.phone}
+                                                                                <ChevronsUpDown
+                                                                                    className="h-5 w-5 text-gray-400"
+                                                                                    aria-hidden="true"
+                                                                                />
+                                                                            </Combobox.Button>
+                                                                        </div>
+                                                                        <Transition
+                                                                            as={Fragment}
+                                                                            leave="transition ease-in duration-100"
+                                                                            leaveFrom="opacity-100"
+                                                                            leaveTo="opacity-0"
+                                                                            afterLeave={() => setClientQuery('')}
+                                                                        >
+                                                                            <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-10">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setIsClientFormOpen(true)}
+                                                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b border-gray-200"
+                                                                                >
+                                                                                    <UserPlus size={16} />
+                                                                                    Crear nuevo cliente
+                                                                                </button>
+                                                                                {filteredClients.length === 0 && clientQuery !== '' ? (
+                                                                                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                                                                                        No se encontraron clientes.
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    filteredClients.map((client) => (
+                                                                                        <Combobox.Option
+                                                                                            key={client.id}
+                                                                                            className={({ active }) =>
+                                                                                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                                    active ? 'bg-blue-600 text-white' : 'text-gray-900'
+                                                                                                }`
+                                                                                            }
+                                                                                            value={client}
+                                                                                        >
+                                                                                            {({ selected, active }) => (
+                                                                                                <>
+                                                                                                    <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                                                                        {client.name}
                                                                                                     </span>
-                                                                                                )}
-                                                                                                {selected ? (
-                                                                                                    <span
-                                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                                                                                                            active ? 'text-white' : 'text-blue-600'
-                                                                                                        }`}
-                                                                                                    >
-                                                                                                        <Check className="h-5 w-5" aria-hidden="true" />
-                                                                                                    </span>
-                                                                                                ) : null}
-                                                                                            </>
-                                                                                        )}
-                                                                                    </Combobox.Option>
-                                                                                ))
-                                                                            )}
-                                                                        </Combobox.Options>
-                                                                    </Transition>
-                                                                </div>
+                                                                                                    {client.phone && (
+                                                                                                        <span className={`block text-xs ${active ? 'text-blue-200' : 'text-gray-500'}`}>
+                                                                                                            {client.phone}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                    {selected ? (
+                                                                                                        <span
+                                                                                                            className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                                                active ? 'text-white' : 'text-blue-600'
+                                                                                                            }`}
+                                                                                                        >
+                                                                                                            <Check className="h-5 w-5" aria-hidden="true" />
+                                                                                                        </span>
+                                                                                                    ) : null}
+                                                                                                </>
+                                                                                            )}
+                                                                                        </Combobox.Option>
+                                                                                    ))
+                                                                                )}
+                                                                            </Combobox.Options>
+                                                                        </Transition>
+                                                                    </div>
+                                                                )}
                                                             </Combobox>
                                                         )}
                                                     />
@@ -364,80 +409,86 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                     }
                                                                 }}
                                                             >
-                                                                <div className="relative">
-                                                                    <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
-                                                                        <Combobox.Input
-                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 placeholder:text-gray-500"
-                                                                            displayValue={(service: Service | null) => service?.name || field.value}
-                                                                            onChange={(event) => {
-                                                                                setServiceQuery(event.target.value);
-                                                                                field.onChange(event.target.value);
-                                                                            }}
-                                                                            placeholder="Selecciona o escribe un servicio"
-                                                                        />
-                                                                        <Combobox.Button className="absolute inset-y-0 right-0 flex items-center pr-2">
-                                                                            <ChevronsUpDown
-                                                                                className="h-5 w-5 text-gray-400"
-                                                                                aria-hidden="true"
+                                                                {({ open }) => (
+                                                                    <div className="relative">
+                                                                        <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
+                                                                            <Combobox.Input
+                                                                                className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 placeholder:text-gray-500"
+                                                                                displayValue={(service: Service | null) => service?.name || field.value}
+                                                                                onChange={(event) => {
+                                                                                    setServiceQuery(event.target.value);
+                                                                                    field.onChange(event.target.value);
+                                                                                }}
+                                                                                onClick={() => !open && serviceButtonRef.current?.click()}
+                                                                                placeholder="Selecciona o escribe un servicio"
                                                                             />
-                                                                        </Combobox.Button>
-                                                                    </div>
-                                                                    <Transition
-                                                                        as={Fragment}
-                                                                        leave="transition ease-in duration-100"
-                                                                        leaveFrom="opacity-100"
-                                                                        leaveTo="opacity-0"
-                                                                        afterLeave={() => setServiceQuery('')}
-                                                                    >
-                                                                        <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-10">
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={() => setIsServiceFormOpen(true)}
-                                                                                className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b border-gray-200"
+                                                                            <Combobox.Button 
+                                                                                ref={serviceButtonRef}
+                                                                                className="absolute inset-y-0 right-0 flex items-center pr-2"
                                                                             >
-                                                                                <Plus size={16} />
-                                                                                Crear nuevo servicio
-                                                                            </button>
-                                                                            {filteredServices.length === 0 && serviceQuery !== '' ? (
-                                                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
-                                                                                    No se encontraron servicios.
-                                                                                </div>
-                                                                            ) : (
-                                                                                filteredServices.map((service) => (
-                                                                                    <Combobox.Option
-                                                                                        key={service.id}
-                                                                                        className={({ active }) =>
-                                                                                            `relative cursor-default select-none py-2 pl-10 pr-4 ${
-                                                                                                active ? 'bg-blue-600 text-white' : 'text-gray-900'
-                                                                                            }`
-                                                                                        }
-                                                                                        value={service}
-                                                                                    >
-                                                                                        {({ selected, active }) => (
-                                                                                            <>
-                                                                                                <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
-                                                                                                    {service.name}
-                                                                                                </span>
-                                                                                                <span className={`block text-xs ${active ? 'text-blue-200' : 'text-gray-500'}`}>
-                                                                                                    ${service.price} - {service.duration} min
-                                                                                                </span>
-                                                                                                {selected ? (
-                                                                                                    <span
-                                                                                                        className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
-                                                                                                            active ? 'text-white' : 'text-blue-600'
-                                                                                                        }`}
-                                                                                                    >
-                                                                                                        <Check className="h-5 w-5" aria-hidden="true" />
+                                                                                <ChevronsUpDown
+                                                                                    className="h-5 w-5 text-gray-400"
+                                                                                    aria-hidden="true"
+                                                                                />
+                                                                            </Combobox.Button>
+                                                                        </div>
+                                                                        <Transition
+                                                                            as={Fragment}
+                                                                            leave="transition ease-in duration-100"
+                                                                            leaveFrom="opacity-100"
+                                                                            leaveTo="opacity-0"
+                                                                            afterLeave={() => setServiceQuery('')}
+                                                                        >
+                                                                            <Combobox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm z-10">
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => setIsServiceFormOpen(true)}
+                                                                                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 border-b border-gray-200"
+                                                                                >
+                                                                                    <Plus size={16} />
+                                                                                    Crear nuevo servicio
+                                                                                </button>
+                                                                                {filteredServices.length === 0 && serviceQuery !== '' ? (
+                                                                                    <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                                                                                        No se encontraron servicios.
+                                                                                    </div>
+                                                                                ) : (
+                                                                                    filteredServices.map((service) => (
+                                                                                        <Combobox.Option
+                                                                                            key={service.id}
+                                                                                            className={({ active }) =>
+                                                                                                `relative cursor-default select-none py-2 pl-10 pr-4 ${
+                                                                                                    active ? 'bg-blue-600 text-white' : 'text-gray-900'
+                                                                                                }`
+                                                                                            }
+                                                                                            value={service}
+                                                                                        >
+                                                                                            {({ selected, active }) => (
+                                                                                                <>
+                                                                                                    <span className={`block truncate ${selected ? 'font-medium' : 'font-normal'}`}>
+                                                                                                        {service.name}
                                                                                                     </span>
-                                                                                                ) : null}
-                                                                                            </>
-                                                                                        )}
-                                                                                    </Combobox.Option>
-                                                                                ))
-                                                                            )}
-                                                                        </Combobox.Options>
-                                                                    </Transition>
-                                                                </div>
+                                                                                                    <span className={`block text-xs ${active ? 'text-blue-200' : 'text-gray-500'}`}>
+                                                                                                        ${service.price} - {service.duration} min
+                                                                                                    </span>
+                                                                                                    {selected ? (
+                                                                                                        <span
+                                                                                                            className={`absolute inset-y-0 left-0 flex items-center pl-3 ${
+                                                                                                                active ? 'text-white' : 'text-blue-600'
+                                                                                                            }`}
+                                                                                                        >
+                                                                                                            <Check className="h-5 w-5" aria-hidden="true" />
+                                                                                                        </span>
+                                                                                                    ) : null}
+                                                                                                </>
+                                                                                            )}
+                                                                                        </Combobox.Option>
+                                                                                    ))
+                                                                                )}
+                                                                            </Combobox.Options>
+                                                                        </Transition>
+                                                                    </div>
+                                                                )}
                                                             </Combobox>
                                                         )}
                                                     />
@@ -541,12 +592,14 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
             onClose={() => setIsClientFormOpen(false)}
             onSubmit={handleCreateClient}
             title="Crear Cliente Rápido"
+            initialName={clientQuery}
         />
 
         <ServiceForm
             isOpen={isServiceFormOpen}
             onClose={() => setIsServiceFormOpen(false)}
             onSuccess={handleCreateService}
+            initialName={serviceQuery}
         />
         </>
     );
