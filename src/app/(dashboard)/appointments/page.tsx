@@ -110,10 +110,11 @@ export default function AppointmentsPage() {
         }
     };
 
-    const handleDelete = async (item: AgendaItem) => {
+    const handleDelete = async (itemOrId: AgendaItem | string) => {
+        const id = typeof itemOrId === 'string' ? itemOrId : itemOrId.id;
         if (!user || !confirm("¿Estás seguro de eliminar esta cita?")) return;
         try {
-            await deleteAgendaItem(user.uid, item.id);
+            await deleteAgendaItem(user.uid, id);
             toast.success("Cita eliminada");
         } catch (error) {
             toast.error("Error al eliminar cita");
@@ -362,6 +363,7 @@ export default function AppointmentsPage() {
                     items={filteredItems}
                     onEventClick={(item) => { setEditingItem(item); setIsFormOpen(true); }}
                     onStatusChange={handleStatusChange}
+                    onDelete={handleDelete}
                 />
             )}
 

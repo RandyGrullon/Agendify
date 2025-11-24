@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { BusinessSettings } from "@/types";
 
 const COLLECTION_NAME = "settings";
@@ -40,4 +40,15 @@ export const saveBusinessSettings = async (userId: string, settings: Partial<Bus
         console.error("Error saving settings:", error);
         throw error;
     }
+};
+
+export const subscribeToSettings = (userId: string, callback: (settings: BusinessSettings | null) => void) => {
+    const docRef = doc(db, COLLECTION_NAME, userId);
+    return onSnapshot(docRef, (docSnap) => {
+        if (docSnap.exists()) {
+            callback(docSnap.data() as BusinessSettings);
+        } else {
+            callback(null);
+        }
+    });
 };
