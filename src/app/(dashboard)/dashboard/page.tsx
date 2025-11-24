@@ -11,6 +11,7 @@ import AgendaForm from "@/components/dashboard/AgendaForm";
 import ImportDialog from "@/components/dashboard/ImportDialog";
 import CalendarView from "@/components/dashboard/CalendarView";
 import KanbanView from "@/components/dashboard/KanbanView";
+import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import { Plus, Download, Upload, Calendar as CalendarIcon, DollarSign, Users, TrendingUp, Search, Filter, List, AlertCircle, Layout } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -21,227 +22,50 @@ export default function DashboardPage() {
     const { user } = useAuth();
     const [items, setItems] = useState<AgendaItem[]>([]);
     const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
-    const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isImportOpen, setIsImportOpen] = useState(false);
-    const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [dateFrom, setDateFrom] = useState("");
-    const [dateTo, setDateTo] = useState("");
-    const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'kanban'>('list');
-
+    
+    // Only keep necessary state for metrics and basic list
     useEffect(() => {
         if (user) {
             const unsubscribe = subscribeToAgenda(user.uid, (data) => {
                 setItems(data);
-                setFilteredItems(data);
+                // Sort by date descending for the list
+                const sorted = [...data].sort((a, b) => {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    return dateB - dateA;
+                });
+                setFilteredItems(sorted);
             });
             return () => unsubscribe();
         }
     }, [user]);
 
-    useEffect(() => {
-        const lowerTerm = searchTerm.toLowerCase();
-        let filtered = items.filter(item =>
-            item.client.toLowerCase().includes(lowerTerm) ||
-            item.service.toLowerCase().includes(lowerTerm) ||
-            item.status.toLowerCase().includes(lowerTerm)
-        );
-
-        // Status filter
-        if (statusFilter !== "all") {
-            filtered = filtered.filter(item => item.status === statusFilter);
-        }
-
-        // Date range filter
-        if (dateFrom && dateTo) {
-            filtered = filtered.filter(item => {
-                try {
-                    if (!item.date) return false;
-                    
-                    let dateStr: string;
-                    
-                    // Handle Excel serial dates
-                    if (typeof item.date === 'number') {
-                        const excelEpoch = new Date(1899, 11, 30);
-                        const tempDate = new Date(excelEpoch.getTime() + item.date * 86400000);
-                        dateStr = tempDate.toISOString().split('T')[0];
-                    } else {
-                        dateStr = item.date.includes('T') ? item.date.split('T')[0] : item.date;
-                    }
-                    
-                    const itemDate = new Date(dateStr + 'T00:00:00');
-                    
-                    if (isNaN(itemDate.getTime())) return false;
-                    
-                    return isWithinInterval(itemDate, {
-                        start: new Date(dateFrom),
-                        end: new Date(dateTo)
-                    });
-                } catch {
-                    return false;
-                }
-            });
-        }
-
-        setFilteredItems(filtered);
-    }, [searchTerm, items, statusFilter, dateFrom, dateTo]);
-
     // Summary statistics
     const stats = useMemo(() => {
-        const total = filteredItems.length;
-        const confirmed = filteredItems.filter(i => i.status === 'confirmed').length;
-        const pending = filteredItems.filter(i => i.status === 'pending').length;
-        const totalRevenue = filteredItems
+        const total = items.length;
+        const confirmed = items.filter(i => i.status === 'confirmed').length;
+        const pending = items.filter(i => i.status === 'pending').length;
+        const totalRevenue = items
             .filter(i => i.status === 'completed')
             .reduce((sum, i) => sum + i.quotedAmount, 0);
-        const totalProfit = filteredItems
+        const totalProfit = items
             .filter(i => i.status === 'completed')
             .reduce((sum, i) => sum + i.myProfit, 0);
-        const uniqueClients = new Set(filteredItems.map(i => i.client)).size;
+        const uniqueClients = new Set(items.map(i => i.client)).size;
         
-        const pendingPayment = filteredItems
+        const pendingPayment = items
             .filter(i => i.status === 'pending' || i.status === 'confirmed')
             .reduce((sum, i) => sum + (i.quotedAmount - (i.deposit || 0)), 0);
 
         return { total, confirmed, pending, totalRevenue, totalProfit, uniqueClients, pendingPayment };
-    }, [filteredItems]);
-
-    const handleCreate = async (data: any) => {
-        if (!user) return;
-        try {
-            await addAgendaItem(user.uid, data);
-            setIsFormOpen(false);
-            toast.success("Cita creada");
-        } catch (error) {
-            toast.error("Error al crear cita");
-        }
-    };
-
-    const handleUpdate = async (data: any) => {
-        if (!user || !editingItem) return;
-        try {
-            await updateAgendaItem(user.uid, editingItem.id, data);
-            setIsFormOpen(false);
-            setEditingItem(null);
-            toast.success("Cita actualizada");
-        } catch (error) {
-            toast.error("Error al actualizar cita");
-        }
-    };
-
-    const handleDelete = async (item: AgendaItem) => {
-        if (!user || !confirm("¿Estás seguro de eliminar esta cita?")) return;
-        try {
-            await deleteAgendaItem(user.uid, item.id);
-            toast.success("Cita eliminada");
-        } catch (error) {
-            toast.error("Error al eliminar cita");
-        }
-    };
-
-    const handleDuplicate = async (item: AgendaItem) => {
-        if (!user) return;
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { id, ...rest } = item;
-            await addAgendaItem(user.uid, { ...rest });
-            toast.success("Cita duplicada");
-        } catch (error) {
-            toast.error("Error al duplicar cita");
-        }
-    };
-
-    const handleStatusChange = async (itemId: string, newStatus: AgendaItem['status']) => {
-        if (!user) return;
-        try {
-            await updateAgendaItem(user.uid, itemId, { status: newStatus });
-            toast.success("Estado actualizado");
-        } catch (error) {
-            toast.error("Error al actualizar estado");
-        }
-    };
-
-    const handleDownloadReceipt = async (item: AgendaItem) => {
-        if (!user) return;
-        try {
-            const settings = await getBusinessSettings(user.uid);
-            generateReceipt(item, settings);
-            toast.success("Recibo generado");
-        } catch (error) {
-            console.error(error);
-            toast.error("Error al generar recibo");
-        }
-    };
-
-    const handleExport = () => {
-        // Format data for export
-        const exportData = filteredItems.map(item => {
-            const porCobrar = item.quotedAmount - (item.deposit || 0);
-            const showPorCobrar = porCobrar > 0 && (item.status === 'pending' || item.status === 'confirmed');
-            return {
-                'Fecha': item.date,
-                'Hora': item.time,
-                'Cliente': item.client,
-                'Servicio': item.service,
-                'Estado': item.status === 'pending' ? 'Pendiente' : 
-                         item.status === 'confirmed' ? 'Confirmado' :
-                         item.status === 'completed' ? 'Completado' : 'Cancelado',
-                'Personas': item.peopleCount,
-                'Ubicación': item.location || '',
-                'Monto Cotizado': item.quotedAmount,
-                'Abono': item.deposit || 0,
-                ...(showPorCobrar && { 'Por Cobrar': porCobrar }),
-                'Mi Ganancia': item.myProfit,
-                'Pago Colaborador': item.collaboratorPayment,
-                'Colaborador': item.collaborator || '',
-                'Banco': item.bank || '',
-                'Comentarios': item.comments || '',
-                'Creado': item.createdAt ? format(new Date(item.createdAt), "dd/MM/yyyy HH:mm", { locale: es }) : '',
-                'Actualizado': item.updatedAt ? format(new Date(item.updatedAt), "dd/MM/yyyy HH:mm", { locale: es }) : '',
-            };
-        });
-
-        const ws = XLSX.utils.json_to_sheet(exportData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Agenda");
-        XLSX.writeFile(wb, `agenda_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
-        toast.success("Exportado exitosamente");
-    };
-
-    const handleImport = async (importedItems: Omit<AgendaItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>[]) => {
-        if (!user) return;
-        
-        try {
-            for (const item of importedItems) {
-                await addAgendaItem(user.uid, item);
-            }
-            toast.success(`${importedItems.length} citas importadas exitosamente`);
-        } catch (error) {
-            console.error('Error al importar:', error);
-            throw error;
-        }
-    };
-
-    const setThisMonth = () => {
-        const now = new Date();
-        setDateFrom(format(startOfMonth(now), 'yyyy-MM-dd'));
-        setDateTo(format(endOfMonth(now), 'yyyy-MM-dd'));
-    };
-
-    const clearFilters = () => {
-        setSearchTerm("");
-        setStatusFilter("all");
-        setDateFrom("");
-        setDateTo("");
-    };
+    }, [items]);
 
     return (
         <div className="p-6 max-w-7xl mx-auto">
             {/* Header */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
-                <p className="text-gray-600">Resumen de tus citas y servicios</p>
+                <p className="text-gray-600">Resumen general de tu negocio</p>
             </div>
 
             {/* Summary Cards */}
@@ -311,168 +135,66 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Actions Bar */}
-            <div className="bg-white rounded-lg shadow p-4 mb-6">
-                <div className="flex flex-col gap-4">
-                    {/* Search and Primary Actions */}
-                    <div className="flex flex-col sm:flex-row gap-3">
-                        <div className="flex-1 relative">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                            <input
-                                type="text"
-                                placeholder="Buscar por cliente, servicio o estado..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                            />
-                        </div>
-                        <button
-                            onClick={() => setIsFormOpen(true)}
-                            className="flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-                        >
-                            <Plus size={18} />
-                            Nueva Cita
-                        </button>
-                    </div>
+            {/* Charts Section */}
+            <DashboardCharts items={items} />
 
-                    {/* Filters and Secondary Actions */}
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <div className="flex bg-gray-100 p-1 rounded-lg mr-2">
-                            <button
-                                onClick={() => setViewMode('list')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                title="Vista de Lista"
-                            >
-                                <List size={18} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('calendar')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'calendar' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                title="Vista de Calendario"
-                            >
-                                <CalendarIcon size={18} />
-                            </button>
-                            <button
-                                onClick={() => setViewMode('kanban')}
-                                className={`p-2 rounded-md transition-all ${viewMode === 'kanban' ? 'bg-white shadow text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-                                title="Vista Kanban"
-                            >
-                                <Layout size={18} />
-                            </button>
-                        </div>
-
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        >
-                            <option value="all">Todos los estados</option>
-                            <option value="pending">Pendiente</option>
-                            <option value="confirmed">Confirmado</option>
-                            <option value="completed">Completado</option>
-                            <option value="cancelled">Cancelado</option>
-                        </select>
-                        
-                        <div className="flex gap-2 ml-auto">
-                            <button
-                                onClick={() => setIsImportOpen(true)}
-                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                                <Upload size={18} />
-                                Importar
-                            </button>
-                            <button
-                                onClick={handleExport}
-                                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-                            >
-                                <Download size={18} />
-                                Exportar
-                            </button>
-                        </div>
-                    </div>
+            {/* Recent Appointments Preview */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                    <h2 className="text-lg font-semibold text-gray-900">Próximas Citas</h2>
+                    <a href="/appointments" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        Ver todas
+                    </a>
                 </div>
-
-                {/* Date Range Filter */}
-                <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-200">
-                    <Filter size={18} className="text-gray-500" />
-                    <input
-                        type="date"
-                        value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        placeholder="Desde"
-                    />
-                    <span className="text-gray-500">-</span>
-                    <input
-                        type="date"
-                        value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
-                        className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-                        placeholder="Hasta"
-                    />
-                    <button
-                        onClick={setThisMonth}
-                        className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-black"
-                    >
-                        Este mes
-                    </button>
-                    {(dateFrom || dateTo || statusFilter !== "all" || searchTerm) && (
-                        <button
-                            onClick={clearFilters}
-                            className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 transition-colors"
-                        >
-                            Limpiar filtros
-                        </button>
-                    )}
+                
+                {filteredItems.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                        No hay citas registradas.
+                    </div>
+                ) : (
+                    <div className="divide-y divide-gray-200">
+                        {filteredItems.slice(0, 5).map((item) => (
+                            <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2 rounded-full ${
+                                        item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
+                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                                        item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                                        'bg-red-100 text-red-600'
+                                    }`}>
+                                        <CalendarIcon size={20} />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-gray-900">{item.client}</p>
+                                        <p className="text-sm text-gray-500">{item.service} • {item.time}</p>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <p className="font-medium text-gray-900">
+                                        ${item.quotedAmount.toLocaleString('es-MX')}
+                                    </p>
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                        item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                        item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                        'bg-red-100 text-red-800'
+                                    }`}>
+                                        {item.status === 'pending' ? 'Pendiente' : 
+                                         item.status === 'confirmed' ? 'Confirmado' :
+                                         item.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                    </span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+                
+                <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
+                    <a href="/appointments" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center justify-center">
+                        Gestionar agenda completa
+                    </a>
                 </div>
             </div>
-
-            {/* Results Count */}
-            <div className="mb-4 text-sm text-gray-600">
-                Mostrando <span className="font-semibold">{filteredItems.length}</span> de <span className="font-semibold">{items.length}</span> citas
-            </div>
-
-            {/* Content */}
-            {viewMode === 'list' && (
-                <AgendaTable
-                    items={filteredItems}
-                    onEdit={(item) => { setEditingItem(item); setIsFormOpen(true); }}
-                    onDelete={handleDelete}
-                    onDuplicate={handleDuplicate}
-                    onDownloadReceipt={handleDownloadReceipt}
-                    onStatusChange={handleStatusChange}
-                />
-            )}
-            
-            {viewMode === 'calendar' && (
-                <CalendarView
-                    items={filteredItems}
-                    onEventClick={(item) => { setEditingItem(item); setIsFormOpen(true); }}
-                    onStatusChange={handleStatusChange}
-                />
-            )}
-
-            {viewMode === 'kanban' && (
-                <KanbanView
-                    items={filteredItems}
-                    onStatusChange={handleStatusChange}
-                    onEventClick={(item) => { setEditingItem(item); setIsFormOpen(true); }}
-                />
-            )}
-
-            {/* Dialogs */}
-            <AgendaForm
-                isOpen={isFormOpen}
-                onClose={() => { setIsFormOpen(false); setEditingItem(null); }}
-                onSubmit={editingItem ? handleUpdate : handleCreate}
-                initialData={editingItem}
-            />
-
-            <ImportDialog
-                isOpen={isImportOpen}
-                onClose={() => setIsImportOpen(false)}
-                onImport={handleImport}
-            />
         </div>
     );
 }

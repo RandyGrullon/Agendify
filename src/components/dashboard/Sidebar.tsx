@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'Citas', href: '/appointments', icon: Calendar },
     { name: 'Clientes', href: '/clients', icon: Users },
     { name: 'Servicios', href: '/services', icon: Scissors },
     { name: 'Configuración', href: '/settings', icon: Settings },
