@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
+import { useSearchParams } from "next/navigation";
 import {
   subscribeToAgenda,
   addAgendaItem,
@@ -33,13 +34,16 @@ import { es } from "date-fns/locale";
 
 export default function AppointmentsPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<string>(
+    searchParams.get("status") || "all"
+  );
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "kanban">(

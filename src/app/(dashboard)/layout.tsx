@@ -15,6 +15,7 @@ export default function DashboardLayout({
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [pinEnabled, setPinEnabled] = useState(false);
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
     useEffect(() => {
         // Check if PIN is enabled
@@ -24,6 +25,12 @@ export default function DashboardLayout({
         // If no PIN is set, app is "unlocked"
         if (!storedPin) {
             setIsUnlocked(true);
+        }
+
+        // Load sidebar collapsed state
+        const savedSidebarState = localStorage.getItem('sidebar-collapsed');
+        if (savedSidebarState !== null) {
+            setSidebarCollapsed(savedSidebarState === 'true');
         }
 
         // Handle auto-lock on visibility change
@@ -47,6 +54,30 @@ export default function DashboardLayout({
         return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
     }, []);
 
+    // Listen for sidebar collapse changes
+    useEffect(() => {
+        const handleStorageChange = () => {
+            const savedState = localStorage.getItem('sidebar-collapsed');
+            if (savedState !== null) {
+                setSidebarCollapsed(savedState === 'true');
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        
+        // Custom event for same-window updates
+        const handleSidebarToggle = (e: CustomEvent) => {
+            setSidebarCollapsed(e.detail.collapsed);
+        };
+        
+        window.addEventListener('sidebar-toggle' as any, handleSidebarToggle as any);
+        
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('sidebar-toggle' as any, handleSidebarToggle as any);
+        };
+    }, []);
+
     if (pinEnabled && !isUnlocked) {
         return <PINLockScreen onUnlock={() => setIsUnlocked(true)} />;
     }
@@ -55,7 +86,14 @@ export default function DashboardLayout({
         <div className="min-h-screen bg-gray-100">
             <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-            <div className="lg:pl-72">
+            <div 
+                className="transition-all duration-300"
+                style={{ 
+                    paddingLeft: typeof window !== 'undefined' && window.innerWidth >= 1024 
+                        ? (sidebarCollapsed ? '5rem' : '18rem') 
+                        : '0' 
+                }}
+            >
                 <Topbar onMenuClick={() => setSidebarOpen(true)} />
                 <main className="py-10">
                     <div className="px-4 sm:px-6 lg:px-8">

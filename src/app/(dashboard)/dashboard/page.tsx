@@ -11,7 +11,6 @@ import AgendaForm from "@/components/dashboard/AgendaForm";
 import ImportDialog from "@/components/dashboard/ImportDialog";
 import CalendarView from "@/components/dashboard/CalendarView";
 import KanbanView from "@/components/dashboard/KanbanView";
-import DashboardCharts from "@/components/dashboard/DashboardCharts";
 import { Plus, Download, Upload, Calendar as CalendarIcon, DollarSign, Users, TrendingUp, Search, Filter, List, AlertCircle, Layout } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -93,7 +92,7 @@ export default function DashboardPage() {
             {/* Summary Cards */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 mb-8">
                 {/* Total Citas Card */}
-                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <a href="/appointments" className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer">
                     <div className="p-5">
                         <div className="flex items-start justify-between mb-3">
                             <div className="p-2.5 bg-blue-50 rounded-lg">
@@ -106,10 +105,10 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-400"></div>
-                </div>
+                </a>
 
                 {/* Confirmadas Card */}
-                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <a href="/appointments?status=confirmed" className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer">
                     <div className="p-5">
                         <div className="flex items-start justify-between mb-3">
                             <div className="p-2.5 bg-green-50 rounded-lg">
@@ -122,10 +121,10 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div className="h-1 bg-gradient-to-r from-green-500 to-green-400"></div>
-                </div>
+                </a>
 
                 {/* Clientes Únicos Card */}
-                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                <a href="/clients" className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer">
                     <div className="p-5">
                         <div className="flex items-start justify-between mb-3">
                             <div className="p-2.5 bg-purple-50 rounded-lg">
@@ -138,7 +137,7 @@ export default function DashboardPage() {
                         </div>
                     </div>
                     <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-400"></div>
-                </div>
+                </a>
 
                 {/* Ganancia Total Card */}
                 <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
@@ -176,9 +175,6 @@ export default function DashboardPage() {
                     <div className="h-1 bg-gradient-to-r from-red-500 to-red-400"></div>
                 </div>
             </div>
-
-            {/* Charts Section */}
-            <DashboardCharts items={items} />
 
             {/* Recent Appointments Preview */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, Home, Users, Settings, X, Scissors, FileText } from "lucide-react";
+import { Calendar, Home, Users, Settings, X, Scissors, FileText, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/components/providers/AuthProvider";
+import { auth } from "@/lib/firebase";
+import { signOut } from "firebase/auth";
+import { toast } from "sonner";
+import { useState, useEffect } from "react";
 
 const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
@@ -17,6 +22,39 @@ const navigation = [
 
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (open: boolean) => void }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const [isCollapsed, setIsCollapsed] = useState(false);
+
+    // Load collapsed state from localStorage
+    useEffect(() => {
+        const savedState = localStorage.getItem('sidebar-collapsed');
+        if (savedState !== null) {
+            setIsCollapsed(savedState === 'true');
+        }
+    }, []);
+
+    // Save collapsed state to localStorage
+    const toggleCollapse = () => {
+        const newState = !isCollapsed;
+        setIsCollapsed(newState);
+        localStorage.setItem('sidebar-collapsed', String(newState));
+        
+        // Dispatch custom event for layout to listen
+        window.dispatchEvent(new CustomEvent('sidebar-toggle', { 
+            detail: { collapsed: newState } 
+        }));
+    };
+
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            toast.success('Sesión cerrada exitosamente');
+            router.push('/login');
+        } catch (error) {
+            console.error('Error al cerrar sesión:', error);
+            toast.error('Error al cerrar sesión');
+        }
+    };
 
     return (
         <>
@@ -74,6 +112,18 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                                             ))}
                                         </ul>
                                     </li>
+                                    <li className="mt-auto">
+                                        <button
+                                            onClick={handleSignOut}
+                                            className="group flex w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-red-600 hover:bg-red-50 transition-colors"
+                                        >
+                                            <LogOut
+                                                className="h-6 w-6 shrink-0"
+                                                aria-hidden="true"
+                                            />
+                                            Cerrar Sesión
+                                        </button>
+                                    </li>
                                 </ul>
                             </nav>
                         </motion.div>
@@ -82,10 +132,29 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
             </AnimatePresence>
 
             {/* Desktop sidebar */}
-            <div className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
+            <motion.div 
+                initial={false}
+                animate={{ width: isCollapsed ? '5rem' : '18rem' }}
+                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                className="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:flex-col"
+            >
                 <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
-                    <div className="flex h-16 shrink-0 items-center">
-                        <span className="text-2xl font-bold text-blue-600">Agendify</span>
+                    <div className="flex h-16 shrink-0 items-center justify-between">
+                        {!isCollapsed && <span className="text-2xl font-bold text-blue-600">Agendify</span>}
+                        <button
+                            onClick={toggleCollapse}
+                            className={cn(
+                                "p-2 rounded-md hover:bg-gray-100 transition-colors",
+                                isCollapsed && "mx-auto"
+                            )}
+                            title={isCollapsed ? "Expandir sidebar" : "Compactar sidebar"}
+                        >
+                            {isCollapsed ? (
+                                <ChevronRight className="h-5 w-5 text-gray-600" />
+                            ) : (
+                                <ChevronLeft className="h-5 w-5 text-gray-600" />
+                            )}
+                        </button>
                     </div>
                     <nav className="flex flex-1 flex-col">
                         <ul role="list" className="flex flex-1 flex-col gap-y-7">
@@ -99,8 +168,10 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                                                     pathname === item.href
                                                         ? 'bg-gray-50 text-blue-600'
                                                         : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50',
-                                                    'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold'
+                                                    'group flex gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold',
+                                                    isCollapsed && 'justify-center'
                                                 )}
+                                                title={isCollapsed ? item.name : undefined}
                                             >
                                                 <item.icon
                                                     className={cn(
@@ -109,16 +180,32 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
                                                     )}
                                                     aria-hidden="true"
                                                 />
-                                                {item.name}
+                                                {!isCollapsed && item.name}
                                             </Link>
                                         </li>
                                     ))}
                                 </ul>
                             </li>
+                            <li className="mt-auto">
+                                <button
+                                    onClick={handleSignOut}
+                                    className={cn(
+                                        "group flex w-full gap-x-3 rounded-md p-2 text-sm leading-6 font-semibold text-red-600 hover:bg-red-50 transition-colors",
+                                        isCollapsed && 'justify-center'
+                                    )}
+                                    title={isCollapsed ? "Cerrar Sesión" : undefined}
+                                >
+                                    <LogOut
+                                        className="h-6 w-6 shrink-0"
+                                        aria-hidden="true"
+                                    />
+                                    {!isCollapsed && "Cerrar Sesión"}
+                                </button>
+                            </li>
                         </ul>
                     </nav>
                 </div>
-            </div>
+            </motion.div>
         </>
     );
 }
