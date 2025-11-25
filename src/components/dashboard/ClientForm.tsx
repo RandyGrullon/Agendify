@@ -134,21 +134,6 @@ export default function ClientForm({
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                                Email
-                                            </label>
-                                            <input
-                                                type="email"
-                                                {...register('email')}
-                                                placeholder="cliente@ejemplo.com"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                                            />
-                                            {errors.email && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-900 mb-1">
                                                 Teléfono
                                             </label>
                                             <input
@@ -159,6 +144,21 @@ export default function ClientForm({
                                             />
                                             {errors.phone && (
                                                 <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+                                            )}
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                                Email
+                                            </label>
+                                            <input
+                                                type="email"
+                                                {...register('email')}
+                                                placeholder="cliente@ejemplo.com"
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                                            />
+                                            {errors.email && (
+                                                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
                                             )}
                                         </div>
                                     </div>
