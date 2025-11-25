@@ -4,14 +4,13 @@ import { useState, useEffect } from "react";
 import { AgendaItem } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Edit, Trash, Copy, MapPin, Users as UsersIcon, DollarSign, FileText, Clock, Calendar } from "lucide-react";
+import { Edit, Trash, Copy, MapPin, Users as UsersIcon, DollarSign, Clock, Calendar } from "lucide-react";
 
 interface AgendaTableProps {
     items: AgendaItem[];
     onEdit: (item: AgendaItem) => void;
     onDelete: (item: AgendaItem) => void;
     onDuplicate: (item: AgendaItem) => void;
-    onDownloadReceipt: (item: AgendaItem) => void;
     onStatusChange?: (itemId: string, newStatus: AgendaItem['status']) => void;
 }
 
@@ -65,7 +64,7 @@ const parseDate = (dateString: string | number | undefined | null): Date => {
     }
 };
 
-export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onDownloadReceipt, onStatusChange }: AgendaTableProps) {
+export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onStatusChange }: AgendaTableProps) {
     const [isMobile, setIsMobile] = useState(false);
 
     useEffect(() => {

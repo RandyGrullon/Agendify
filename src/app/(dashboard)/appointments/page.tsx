@@ -10,7 +10,6 @@ import {
   deleteAgendaItem,
 } from "@/services/agenda";
 import { getBusinessSettings } from "@/services/settings";
-import { generateReceipt } from "@/lib/pdfGenerator";
 import { AgendaItem } from "@/types";
 import AgendaTable from "@/components/dashboard/AgendaTable";
 import AgendaForm from "@/components/dashboard/AgendaForm";
@@ -170,17 +169,7 @@ export default function AppointmentsPage() {
     }
   };
 
-  const handleDownloadReceipt = async (item: AgendaItem) => {
-    if (!user) return;
-    try {
-      const settings = await getBusinessSettings(user.uid);
-      generateReceipt(item, settings);
-      toast.success("Recibo generado");
-    } catch (error) {
-      console.error(error);
-      toast.error("Error al generar recibo");
-    }
-  };
+
 
   const handleExport = () => {
     // Format data for export
@@ -335,7 +324,7 @@ export default function AppointmentsPage() {
               }}
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
-              onDownloadReceipt={handleDownloadReceipt}
+
               onStatusChange={handleStatusChange}
             />
           )}

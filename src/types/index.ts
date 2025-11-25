@@ -107,6 +107,5 @@ export interface BusinessSettings {
   address?: string;
   website?: string;
   taxId?: string;
-  footerMessage?: string;
   updatedAt: number;
 }

@@ -15,7 +15,6 @@ const settingsSchema = z.object({
     address: z.string().optional(),
     website: z.string().url('URL inválida').optional().or(z.literal('')),
     taxId: z.string().optional(),
-    footerMessage: z.string().max(200, 'Mensaje muy largo').optional(),
 });
 
 type SettingsFormData = z.infer<typeof settingsSchema>;
@@ -42,7 +41,6 @@ export default function SettingsForm({ initialSettings, onSave }: SettingsFormPr
             address: '',
             website: '',
             taxId: '',
-            footerMessage: '¡Gracias por su preferencia!',
         },
     });
 
@@ -157,18 +155,7 @@ export default function SettingsForm({ initialSettings, onSave }: SettingsFormPr
                     </div>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-semibold text-gray-900 mb-1">
-                        Mensaje al pie del recibo
-                    </label>
-                    <textarea
-                        {...register('footerMessage')}
-                        rows={2}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder:text-gray-500"
-                        placeholder="Gracias por su compra. ¡Vuelva pronto!"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Este mensaje aparecerá en la parte inferior de los PDFs generados.</p>
-                </div>
+
 
                 <div className="flex justify-end pt-4">
                     <button

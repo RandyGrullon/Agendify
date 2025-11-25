@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { subscribeToAgenda, addAgendaItem, updateAgendaItem, deleteAgendaItem } from "@/services/agenda";
 import { getBusinessSettings } from "@/services/settings";
-import { generateReceipt } from "@/lib/pdfGenerator";
+
 import { AgendaItem } from "@/types";
 import AgendaTable from "@/components/dashboard/AgendaTable";
 import AgendaForm from "@/components/dashboard/AgendaForm";
@@ -21,7 +21,7 @@ export default function DashboardPage() {
     const { user } = useAuth();
     const [items, setItems] = useState<AgendaItem[]>([]);
     const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
-    
+
     const [isFormOpen, setIsFormOpen] = useState(false);
 
     // Only keep necessary state for metrics and basic list
@@ -53,7 +53,7 @@ export default function DashboardPage() {
             .filter(i => i.status === 'completed')
             .reduce((sum, i) => sum + i.myProfit, 0);
         const uniqueClients = new Set(items.map(i => i.client)).size;
-        
+
         const pendingPayment = items
             .filter(i => i.status === 'pending' || i.status === 'confirmed')
             .reduce((sum, i) => sum + (i.quotedAmount - (i.deposit || 0)), 0);
@@ -187,7 +187,7 @@ export default function DashboardPage() {
                         </svg>
                     </a>
                 </div>
-                
+
                 {filteredItems.length === 0 ? (
                     <div className="p-12 text-center">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
@@ -203,41 +203,39 @@ export default function DashboardPage() {
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                                     {/* Left side - Client info */}
                                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                                        <div className={`p-2 rounded-lg flex-shrink-0 ${
-                                            item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
-                                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                                            item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
-                                            'bg-red-100 text-red-600'
-                                        }`}>
+                                        <div className={`p-2 rounded-lg flex-shrink-0 ${item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
+                                                item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                                                    item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                                                        'bg-red-100 text-red-600'
+                                            }`}>
                                             <CalendarIcon size={18} />
                                         </div>
                                         <div className="min-w-0 flex-1">
                                             <p className="font-semibold text-gray-900 truncate">{item.client}</p>
                                             <p className="text-sm text-gray-600 truncate">{item.service}</p>
                                             <p className="text-xs text-gray-500 mt-0.5">
-                                                {new Date(item.date).toLocaleDateString('es-MX', { 
-                                                    weekday: 'short', 
-                                                    month: 'short', 
-                                                    day: 'numeric' 
+                                                {new Date(item.date).toLocaleDateString('es-MX', {
+                                                    weekday: 'short',
+                                                    month: 'short',
+                                                    day: 'numeric'
                                                 })} • {item.time}
                                             </p>
                                         </div>
                                     </div>
-                                    
+
                                     {/* Right side - Amount and status */}
                                     <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-11 sm:pl-0">
                                         <p className="font-bold text-gray-900 text-lg">
                                             ${item.quotedAmount.toLocaleString('es-MX')}
                                         </p>
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
-                                            item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                            item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                            'bg-red-100 text-red-800'
-                                        }`}>
-                                            {item.status === 'pending' ? 'Pendiente' : 
-                                             item.status === 'confirmed' ? 'Confirmado' :
-                                             item.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-red-100 text-red-800'
+                                            }`}>
+                                            {item.status === 'pending' ? 'Pendiente' :
+                                                item.status === 'confirmed' ? 'Confirmado' :
+                                                    item.status === 'completed' ? 'Completado' : 'Cancelado'}
                                         </span>
                                     </div>
                                 </div>
@@ -245,7 +243,7 @@ export default function DashboardPage() {
                         ))}
                     </div>
                 )}
-                
+
                 <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
                     <a href="/appointments" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center justify-center gap-1 transition-colors">
                         Gestionar agenda completa

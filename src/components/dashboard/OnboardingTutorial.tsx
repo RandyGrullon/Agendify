@@ -111,13 +111,12 @@ export default function OnboardingTutorial() {
                             <button
                                 key={index}
                                 onClick={() => setCurrentStep(index)}
-                                className={`h-2 rounded-full transition-all ${
-                                    index === currentStep
-                                        ? "w-8 bg-blue-600"
-                                        : index < currentStep
+                                className={`h-2 rounded-full transition-all ${index === currentStep
+                                    ? "w-8 bg-blue-600"
+                                    : index < currentStep
                                         ? "w-2 bg-green-500"
                                         : "w-2 bg-gray-300"
-                                }`}
+                                    }`}
                             />
                         ))}
                     </div>
@@ -141,10 +140,7 @@ export default function OnboardingTutorial() {
                                             <Check className="text-green-500" size={20} />
                                             <span>Controlar pagos y ganancias</span>
                                         </li>
-                                        <li className="flex items-center gap-2">
-                                            <Check className="text-green-500" size={20} />
-                                            <span>Generar recibos en PDF</span>
-                                        </li>
+
                                         <li className="flex items-center gap-2">
                                             <Check className="text-green-500" size={20} />
                                             <span>Exportar e importar datos</span>
@@ -170,7 +166,7 @@ export default function OnboardingTutorial() {
                                         <li>✏️ Crea citas con todos los detalles</li>
                                         <li>💵 Registra abonos y pagos</li>
                                         <li>📋 Cambia estados fácilmente</li>
-                                        <li>📄 Genera recibos automáticos</li>
+
                                         <li>📅 Vista de calendario y kanban</li>
                                     </ul>
                                 </>
@@ -216,11 +212,10 @@ export default function OnboardingTutorial() {
                         <button
                             onClick={handlePrevious}
                             disabled={currentStep === 0}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
-                                currentStep === 0
-                                    ? "text-gray-400 cursor-not-allowed"
-                                    : "text-gray-700 hover:bg-gray-100"
-                            }`}
+                            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${currentStep === 0
+                                ? "text-gray-400 cursor-not-allowed"
+                                : "text-gray-700 hover:bg-gray-100"
+                                }`}
                         >
                             <ChevronLeft size={20} />
                             Anterior
