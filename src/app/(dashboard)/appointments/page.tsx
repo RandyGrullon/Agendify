@@ -17,16 +17,10 @@ import AgendaForm from "@/components/dashboard/AgendaForm";
 import ImportDialog from "@/components/dashboard/ImportDialog";
 import CalendarView from "@/components/dashboard/CalendarView";
 import KanbanView from "@/components/dashboard/KanbanView";
-import {
-  Plus,
-  Download,
-  Upload,
-  Calendar as CalendarIcon,
-  Search,
-  Filter,
-  List,
-  Layout,
-} from "lucide-react";
+import FilterDrawer from "@/components/dashboard/FilterDrawer";
+import ViewSwitcher from "@/components/dashboard/ViewSwitcher";
+import ActionMenu from "@/components/dashboard/ActionMenu";
+import { Plus, Filter } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
@@ -39,13 +33,17 @@ export default function AppointmentsPage() {
   const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>(
-    searchParams.get("status") || "all"
-  );
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+
+  // Filter states
+  const [filters, setFilters] = useState({
+    searchTerm: "",
+    status: searchParams.get("status") || "all",
+    dateFrom: "",
+    dateTo: "",
+  });
+
   const [viewMode, setViewMode] = useState<"list" | "calendar" | "kanban">(
     "list"
   );
@@ -61,7 +59,7 @@ export default function AppointmentsPage() {
   }, [user]);
 
   useEffect(() => {
-    const lowerTerm = searchTerm.toLowerCase();
+    const lowerTerm = filters.searchTerm.toLowerCase();
     let filtered = items.filter(
       (item) =>
         item.client.toLowerCase().includes(lowerTerm) ||
@@ -70,12 +68,12 @@ export default function AppointmentsPage() {
     );
 
     // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((item) => item.status === statusFilter);
+    if (filters.status !== "all") {
+      filtered = filtered.filter((item) => item.status === filters.status);
     }
 
     // Date range filter
-    if (dateFrom && dateTo) {
+    if (filters.dateFrom && filters.dateTo) {
       filtered = filtered.filter((item) => {
         try {
           if (!item.date) return false;
@@ -86,6 +84,7 @@ export default function AppointmentsPage() {
           if (typeof item.date === "number") {
             const excelEpoch = new Date(1899, 11, 30);
             const tempDate = new Date(
+              // @ts-ignore
               excelEpoch.getTime() + item.date * 86400000
             );
             dateStr = tempDate.toISOString().split("T")[0];
@@ -100,8 +99,8 @@ export default function AppointmentsPage() {
           if (isNaN(itemDate.getTime())) return false;
 
           return isWithinInterval(itemDate, {
-            start: new Date(dateFrom),
-            end: new Date(dateTo),
+            start: new Date(filters.dateFrom),
+            end: new Date(filters.dateTo),
           });
         } catch {
           return false;
@@ -110,7 +109,7 @@ export default function AppointmentsPage() {
     }
 
     setFilteredItems(filtered);
-  }, [searchTerm, items, statusFilter, dateFrom, dateTo]);
+  }, [filters, items]);
 
   const handleCreate = async (data: any) => {
     if (!user) return;
@@ -199,10 +198,10 @@ export default function AppointmentsPage() {
           item.status === "pending"
             ? "Pendiente"
             : item.status === "confirmed"
-            ? "Confirmado"
-            : item.status === "completed"
-            ? "Completado"
-            : "Cancelado",
+              ? "Confirmado"
+              : item.status === "completed"
+                ? "Completado"
+                : "Cancelado",
         Personas: item.peopleCount,
         Ubicación: item.location || "",
         "Monto Cotizado": item.quotedAmount,
@@ -250,205 +249,120 @@ export default function AppointmentsPage() {
 
   const setThisMonth = () => {
     const now = new Date();
-    setDateFrom(format(startOfMonth(now), "yyyy-MM-dd"));
-    setDateTo(format(endOfMonth(now), "yyyy-MM-dd"));
+    setFilters(prev => ({
+      ...prev,
+      dateFrom: format(startOfMonth(now), "yyyy-MM-dd"),
+      dateTo: format(endOfMonth(now), "yyyy-MM-dd")
+    }));
   };
 
   const clearFilters = () => {
-    setSearchTerm("");
-    setStatusFilter("all");
-    setDateFrom("");
-    setDateTo("");
+    setFilters({
+      searchTerm: "",
+      status: "all",
+      dateFrom: "",
+      dateTo: "",
+    });
+  };
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Agenda de Citas
-        </h1>
-        <p className="text-gray-600">
-          Gestiona, filtra y organiza todas tus citas
-        </p>
-      </div>
-
-      {/* Actions Bar */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col gap-4">
-          {/* Search and Primary Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1 relative">
-              <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                size={20}
-              />
-              <input
-                type="text"
-                placeholder="Buscar por cliente, servicio o estado..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-              />
-            </div>
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="flex items-center justify-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap"
-            >
-              <Plus size={18} />
-              Nueva Cita
-            </button>
-          </div>
-
-          {/* Filters and Secondary Actions */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex bg-gray-100 p-1 rounded-lg mr-2">
-              <button
-                onClick={() => setViewMode("list")}
-                className={`p-2 rounded-md transition-all ${
-                  viewMode === "list"
-                    ? "bg-white shadow text-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                title="Vista de Lista"
-              >
-                <List size={18} />
-              </button>
-              <button
-                onClick={() => setViewMode("calendar")}
-                className={`p-2 rounded-md transition-all ${
-                  viewMode === "calendar"
-                    ? "bg-white shadow text-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                title="Vista de Calendario"
-              >
-                <CalendarIcon size={18} />
-              </button>
-              <button
-                onClick={() => setViewMode("kanban")}
-                className={`p-2 rounded-md transition-all ${
-                  viewMode === "kanban"
-                    ? "bg-white shadow text-blue-600"
-                    : "text-gray-500 hover:text-gray-700"
-                }`}
-                title="Vista Kanban"
-              >
-                <Layout size={18} />
-              </button>
-            </div>
-
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            >
-              <option value="all">Todos los estados</option>
-              <option value="pending">Pendiente</option>
-              <option value="confirmed">Confirmado</option>
-              <option value="completed">Completado</option>
-              <option value="cancelled">Cancelado</option>
-            </select>
-
-            <div className="flex gap-2 ml-auto">
-              <button
-                onClick={() => setIsImportOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Upload size={18} />
-                Importar
-              </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                <Download size={18} />
-                Exportar
-              </button>
-            </div>
-          </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Agenda
+          </h1>
+          <p className="text-gray-600 mt-1">
+            {filteredItems.length} citas encontradas
+          </p>
         </div>
 
-        {/* Date Range Filter */}
-        <div className="flex flex-wrap items-center gap-3 mt-4 pt-4 border-t border-gray-200">
-          <Filter size={18} className="text-gray-500" />
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="Desde"
-          />
-          <span className="text-gray-500">-</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
-            placeholder="Hasta"
-          />
+        <div className="flex items-center gap-3">
+          <ViewSwitcher currentView={viewMode} onViewChange={setViewMode} />
+
           <button
-            onClick={setThisMonth}
-            className="px-3 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-black"
+            onClick={() => setIsFilterOpen(true)}
+            className={`p-2 rounded-full transition-colors ${filters.searchTerm || filters.dateFrom || filters.status !== 'all'
+              ? 'bg-blue-100 text-blue-600'
+              : 'hover:bg-gray-100 text-gray-500'
+              }`}
+            title="Filtros"
           >
-            Este mes
+            <Filter size={20} />
           </button>
-          {(dateFrom || dateTo || statusFilter !== "all" || searchTerm) && (
-            <button
-              onClick={clearFilters}
-              className="px-3 py-1.5 text-sm text-red-600 hover:text-red-800 transition-colors"
-            >
-              Limpiar filtros
-            </button>
-          )}
-        </div>
-      </div>
 
-      {/* Results Count */}
-      <div className="mb-4 text-sm text-gray-600">
-        Mostrando <span className="font-semibold">{filteredItems.length}</span>{" "}
-        de <span className="font-semibold">{items.length}</span> citas
+          <button
+            onClick={() => setIsFormOpen(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+          >
+            <Plus size={20} />
+            <span className="hidden sm:inline">Nueva Cita</span>
+          </button>
+
+          <ActionMenu
+            onImport={() => setIsImportOpen(true)}
+            onExport={handleExport}
+          />
+        </div>
       </div>
 
       {/* Content */}
-      {viewMode === "list" && (
-        <AgendaTable
-          items={filteredItems}
-          onEdit={(item) => {
-            setEditingItem(item);
-            setIsFormOpen(true);
-          }}
-          onDelete={handleDelete}
-          onDuplicate={handleDuplicate}
-          onDownloadReceipt={handleDownloadReceipt}
-          onStatusChange={handleStatusChange}
-        />
+      {viewMode === "calendar" ? (
+        <div className="min-h-[600px]">
+          <CalendarView
+            items={filteredItems}
+            onEventClick={(item) => {
+              setEditingItem(item);
+              setIsFormOpen(true);
+            }}
+            onStatusChange={handleStatusChange}
+            onDelete={handleDelete}
+          />
+        </div>
+      ) : (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden min-h-[600px]">
+          {viewMode === "list" && (
+            <AgendaTable
+              items={filteredItems}
+              onEdit={(item) => {
+                setEditingItem(item);
+                setIsFormOpen(true);
+              }}
+              onDelete={handleDelete}
+              onDuplicate={handleDuplicate}
+              onDownloadReceipt={handleDownloadReceipt}
+              onStatusChange={handleStatusChange}
+            />
+          )}
+
+          {viewMode === "kanban" && (
+            <KanbanView
+              items={filteredItems}
+              onStatusChange={handleStatusChange}
+              onEventClick={(item) => {
+                setEditingItem(item);
+                setIsFormOpen(true);
+              }}
+            />
+          )}
+        </div>
       )}
 
-      {viewMode === "calendar" && (
-        <CalendarView
-          items={filteredItems}
-          onEventClick={(item) => {
-            setEditingItem(item);
-            setIsFormOpen(true);
-          }}
-          onStatusChange={handleStatusChange}
-          onDelete={handleDelete}
-        />
-      )}
+      {/* Dialogs & Drawers */}
+      <FilterDrawer
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        filters={filters}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+        onSetThisMonth={setThisMonth}
+      />
 
-      {viewMode === "kanban" && (
-        <KanbanView
-          items={filteredItems}
-          onStatusChange={handleStatusChange}
-          onEventClick={(item) => {
-            setEditingItem(item);
-            setIsFormOpen(true);
-          }}
-        />
-      )}
-
-      {/* Dialogs */}
       <AgendaForm
         isOpen={isFormOpen}
         onClose={() => {

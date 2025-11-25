@@ -28,7 +28,7 @@ const parseDate = (dateString: string | number | undefined | null): Date => {
     if (!dateString) {
         return new Date();
     }
-    
+
     try {
         // If it's a number (Excel serial date), convert it
         if (typeof dateString === 'number') {
@@ -39,10 +39,10 @@ const parseDate = (dateString: string | number | undefined | null): Date => {
                 return date;
             }
         }
-        
+
         // Convert to string for further processing
         const dateStr = String(dateString);
-        
+
         // If already includes time, parse directly
         if (dateStr.includes('T')) {
             const date = new Date(dateStr);
@@ -50,13 +50,13 @@ const parseDate = (dateString: string | number | undefined | null): Date => {
                 return date;
             }
         }
-        
+
         // Try to parse as YYYY-MM-DD format
         const date = new Date(dateStr + 'T00:00:00');
         if (!isNaN(date.getTime())) {
             return date;
         }
-        
+
         // If all parsing fails, return current date
         return new Date();
     } catch (error) {
@@ -194,13 +194,6 @@ export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onDo
                             {/* Actions */}
                             <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 flex justify-end gap-2">
                                 <button
-                                    onClick={() => onDownloadReceipt(item)}
-                                    className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded-lg transition-colors"
-                                    title="Recibo"
-                                >
-                                    <FileText size={18} />
-                                </button>
-                                <button
                                     onClick={() => onEdit(item)}
                                     className="p-2 text-blue-600 hover:text-blue-900 hover:bg-blue-100 rounded-lg transition-colors"
                                     title="Editar"
@@ -334,13 +327,6 @@ export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onDo
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <div className="flex justify-end gap-2">
-                                            <button
-                                                onClick={() => onDownloadReceipt(item)}
-                                                className="text-gray-600 hover:text-gray-900 transition-colors p-1 hover:bg-gray-100 rounded"
-                                                title="Descargar Recibo"
-                                            >
-                                                <FileText size={18} />
-                                            </button>
                                             <button
                                                 onClick={() => onEdit(item)}
                                                 className="text-blue-600 hover:text-blue-900 transition-colors p-1 hover:bg-blue-50 rounded"

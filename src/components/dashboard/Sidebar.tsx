@@ -16,7 +16,6 @@ const navigation = [
     { name: 'Citas', href: '/appointments', icon: Calendar },
     { name: 'Clientes', href: '/clients', icon: Users },
     { name: 'Servicios', href: '/services', icon: Scissors },
-    { name: 'Facturación', href: '/billing', icon: FileText },
     { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 
@@ -38,10 +37,10 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
         const newState = !isCollapsed;
         setIsCollapsed(newState);
         localStorage.setItem('sidebar-collapsed', String(newState));
-        
+
         // Dispatch custom event for layout to listen
-        window.dispatchEvent(new CustomEvent('sidebar-toggle', { 
-            detail: { collapsed: newState } 
+        window.dispatchEvent(new CustomEvent('sidebar-toggle', {
+            detail: { collapsed: newState }
         }));
     };
 
@@ -132,7 +131,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsO
             </AnimatePresence>
 
             {/* Desktop sidebar */}
-            <motion.div 
+            <motion.div
                 initial={false}
                 animate={{ width: isCollapsed ? '5rem' : '18rem' }}
                 transition={{ duration: 0.3, ease: 'easeInOut' }}
