@@ -91,69 +91,89 @@ export default function DashboardPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-5 mb-8">
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500 overflow-hidden transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm font-medium text-gray-600 truncate" title="Total Citas">Total Citas</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate">{stats.total}</p>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 mb-8">
+                {/* Total Citas Card */}
+                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="p-2.5 bg-blue-50 rounded-lg">
+                                <CalendarIcon className="h-5 w-5 text-blue-600" />
+                            </div>
                         </div>
-                        <div className="p-3 bg-blue-100 rounded-full flex-shrink-0">
-                            <CalendarIcon className="h-6 w-6 text-blue-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-green-500 overflow-hidden transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm font-medium text-gray-600 truncate" title="Confirmadas">Confirmadas</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate">{stats.confirmed}</p>
-                        </div>
-                        <div className="p-3 bg-green-100 rounded-full flex-shrink-0">
-                            <TrendingUp className="h-6 w-6 text-green-600" />
+                        <div>
+                            <p className="text-sm font-medium text-gray-600 mb-1">Total Citas</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.total}</p>
                         </div>
                     </div>
+                    <div className="h-1 bg-gradient-to-r from-blue-500 to-blue-400"></div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500 overflow-hidden transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm font-medium text-gray-600 truncate" title="Clientes Únicos">Clientes Únicos</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate">{stats.uniqueClients}</p>
+                {/* Confirmadas Card */}
+                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="p-2.5 bg-green-50 rounded-lg">
+                                <TrendingUp className="h-5 w-5 text-green-600" />
+                            </div>
                         </div>
-                        <div className="p-3 bg-purple-100 rounded-full flex-shrink-0">
-                            <Users className="h-6 w-6 text-purple-600" />
+                        <div>
+                            <p className="text-sm font-medium text-gray-600 mb-1">Confirmadas</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.confirmed}</p>
                         </div>
                     </div>
+                    <div className="h-1 bg-gradient-to-r from-green-500 to-green-400"></div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500 overflow-hidden transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm font-medium text-gray-600 truncate" title="Ganancia Total">Ganancia Total</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate" title={`$${stats.totalProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}>
-                                ${stats.totalProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                {/* Clientes Únicos Card */}
+                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="p-2.5 bg-purple-50 rounded-lg">
+                                <Users className="h-5 w-5 text-purple-600" />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-600 mb-1">Clientes Únicos</p>
+                            <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.uniqueClients}</p>
+                        </div>
+                    </div>
+                    <div className="h-1 bg-gradient-to-r from-purple-500 to-purple-400"></div>
+                </div>
+
+                {/* Ganancia Total Card */}
+                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="p-2.5 bg-yellow-50 rounded-lg">
+                                <DollarSign className="h-5 w-5 text-yellow-600" />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-600 mb-1">Ganancia Total</p>
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900 break-words" title={`$${stats.totalProfit.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}>
+                                ${stats.totalProfit.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
                             </p>
                         </div>
-                        <div className="p-3 bg-yellow-100 rounded-full flex-shrink-0">
-                            <DollarSign className="h-6 w-6 text-yellow-600" />
-                        </div>
                     </div>
+                    <div className="h-1 bg-gradient-to-r from-yellow-500 to-yellow-400"></div>
                 </div>
 
-                <div className="bg-white rounded-lg shadow p-6 border-l-4 border-red-500 overflow-hidden transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between">
-                        <div className="min-w-0 flex-1 mr-4">
-                            <p className="text-sm font-medium text-gray-600 truncate" title="Por Cobrar">Por Cobrar</p>
-                            <p className="text-3xl font-bold text-gray-900 mt-2 truncate" title={`$${stats.pendingPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}>
-                                ${stats.pendingPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                {/* Por Cobrar Card */}
+                <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100">
+                    <div className="p-5">
+                        <div className="flex items-start justify-between mb-3">
+                            <div className="p-2.5 bg-red-50 rounded-lg">
+                                <AlertCircle className="h-5 w-5 text-red-600" />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium text-gray-600 mb-1">Por Cobrar</p>
+                            <p className="text-xl sm:text-2xl font-bold text-gray-900 break-words" title={`$${stats.pendingPayment.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`}>
+                                ${stats.pendingPayment.toLocaleString('es-MX', { minimumFractionDigits: 0 })}
                             </p>
                         </div>
-                        <div className="p-3 bg-red-100 rounded-full flex-shrink-0">
-                            <AlertCircle className="h-6 w-6 text-red-600" />
-                        </div>
                     </div>
+                    <div className="h-1 bg-gradient-to-r from-red-500 to-red-400"></div>
                 </div>
             </div>
 
@@ -161,50 +181,69 @@ export default function DashboardPage() {
             <DashboardCharts items={items} />
 
             {/* Recent Appointments Preview */}
-            <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <h2 className="text-lg font-semibold text-gray-900">Próximas Citas</h2>
-                    <a href="/appointments" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                    <a href="/appointments" className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1">
                         Ver todas
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                     </a>
                 </div>
                 
                 {filteredItems.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                        No hay citas registradas.
+                    <div className="p-12 text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                            <CalendarIcon className="h-8 w-8 text-gray-400" />
+                        </div>
+                        <p className="text-gray-500 font-medium">No hay citas registradas</p>
+                        <p className="text-gray-400 text-sm mt-1">Comienza creando tu primera cita</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-200">
+                    <div className="divide-y divide-gray-100">
                         {filteredItems.slice(0, 5).map((item) => (
-                            <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                    <div className={`p-2 rounded-full ${
-                                        item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
-                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                                        item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
-                                        'bg-red-100 text-red-600'
-                                    }`}>
-                                        <CalendarIcon size={20} />
+                            <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    {/* Left side - Client info */}
+                                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                                        <div className={`p-2 rounded-lg flex-shrink-0 ${
+                                            item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
+                                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                                            item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                                            'bg-red-100 text-red-600'
+                                        }`}>
+                                            <CalendarIcon size={18} />
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="font-semibold text-gray-900 truncate">{item.client}</p>
+                                            <p className="text-sm text-gray-600 truncate">{item.service}</p>
+                                            <p className="text-xs text-gray-500 mt-0.5">
+                                                {new Date(item.date).toLocaleDateString('es-MX', { 
+                                                    weekday: 'short', 
+                                                    month: 'short', 
+                                                    day: 'numeric' 
+                                                })} • {item.time}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-medium text-gray-900">{item.client}</p>
-                                        <p className="text-sm text-gray-500">{item.service} • {item.time}</p>
+                                    
+                                    {/* Right side - Amount and status */}
+                                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-11 sm:pl-0">
+                                        <p className="font-bold text-gray-900 text-lg">
+                                            ${item.quotedAmount.toLocaleString('es-MX')}
+                                        </p>
+                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                                            item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                            item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                            item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                            'bg-red-100 text-red-800'
+                                        }`}>
+                                            {item.status === 'pending' ? 'Pendiente' : 
+                                             item.status === 'confirmed' ? 'Confirmado' :
+                                             item.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                        </span>
                                     </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="font-medium text-gray-900">
-                                        ${item.quotedAmount.toLocaleString('es-MX')}
-                                    </p>
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                        item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                        item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
-                                        'bg-red-100 text-red-800'
-                                    }`}>
-                                        {item.status === 'pending' ? 'Pendiente' : 
-                                         item.status === 'confirmed' ? 'Confirmado' :
-                                         item.status === 'completed' ? 'Completado' : 'Cancelado'}
-                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -212,8 +251,11 @@ export default function DashboardPage() {
                 )}
                 
                 <div className="bg-gray-50 px-6 py-3 border-t border-gray-200">
-                    <a href="/appointments" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center justify-center">
+                    <a href="/appointments" className="text-sm text-gray-600 hover:text-gray-900 font-medium flex items-center justify-center gap-1 transition-colors">
                         Gestionar agenda completa
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
                     </a>
                 </div>
             </div>
