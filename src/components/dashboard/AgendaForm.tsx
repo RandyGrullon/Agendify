@@ -17,10 +17,9 @@ import Link from "next/link";
 
 const schema = z.object({
     date: z.string().min(1, "Fecha requerida").refine((date) => {
-        const selectedDate = new Date(date);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return selectedDate >= today;
+        // Compare dates as strings to avoid timezone issues
+        const today = new Date().toISOString().split('T')[0];
+        return date >= today;
     }, "La fecha no puede ser anterior a hoy"),
     time: z.string().min(1, "Hora requerida").regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
     client: z.string().min(1, "Cliente requerido"),
@@ -125,8 +124,8 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                 }
             } else {
                 // Only reset if we are opening a fresh form, NOT if we are just receiving updates
-                // We check if the form is dirty to avoid overwriting user input if they started typing before lists loaded
-                // But simpler: just reset when isOpen becomes true and we have no initialData
+                // Calculate today's date fresh each time to ensure it's always current
+                const today = new Date().toISOString().split('T')[0];
                 reset({
                     status: 'pending',
                     peopleCount: 1,
@@ -134,7 +133,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                     deposit: 0,
                     myProfit: 0,
                     collaboratorPayment: 0,
-                    date: new Date().toISOString().split('T')[0],
+                    date: today,
                     time: '09:00',
                     client: '',
                     service: '',
