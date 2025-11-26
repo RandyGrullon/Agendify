@@ -55,7 +55,7 @@ export default function FilterDrawer({
                                     <div className="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
                                         <div className="px-4 py-6 sm:px-6 border-b border-gray-200">
                                             <div className="flex items-start justify-between">
-                                                <Dialog.Title className="text-lg font-medium text-gray-900">
+                                                <Dialog.Title className="text-lg font-medium text-black">
                                                     Filtros
                                                 </Dialog.Title>
                                                 <div className="ml-3 flex h-7 items-center">
@@ -75,7 +75,7 @@ export default function FilterDrawer({
                                             <div className="space-y-6">
                                                 {/* Search */}
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-black mb-2">
                                                         Búsqueda
                                                     </label>
                                                     <div className="relative rounded-md shadow-sm">
@@ -87,7 +87,7 @@ export default function FilterDrawer({
                                                         </div>
                                                         <input
                                                             type="text"
-                                                            className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 border"
+                                                            className="block w-full rounded-md border-gray-300 pl-10 focus:border-blue-500 focus:ring-blue-500 sm:text-sm py-2 border text-black"
                                                             placeholder="Cliente, servicio..."
                                                             value={filters.searchTerm}
                                                             onChange={(e) =>
@@ -99,7 +99,7 @@ export default function FilterDrawer({
 
                                                 {/* Status */}
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-black mb-2">
                                                         Estado
                                                     </label>
                                                     <select
@@ -107,7 +107,7 @@ export default function FilterDrawer({
                                                         onChange={(e) =>
                                                             onFilterChange("status", e.target.value)
                                                         }
-                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3 text-black"
                                                     >
                                                         <option value="all">Todos los estados</option>
                                                         <option value="pending">Pendiente</option>
@@ -119,12 +119,12 @@ export default function FilterDrawer({
 
                                                 {/* Date Range */}
                                                 <div>
-                                                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                                                    <label className="block text-sm font-medium text-black mb-2">
                                                         Rango de Fechas
                                                     </label>
                                                     <div className="grid grid-cols-2 gap-4">
                                                         <div>
-                                                            <label className="block text-xs text-gray-500 mb-1">
+                                                            <label className="block text-xs text-black mb-1">
                                                                 Desde
                                                             </label>
                                                             <input
@@ -133,11 +133,11 @@ export default function FilterDrawer({
                                                                 onChange={(e) =>
                                                                     onFilterChange("dateFrom", e.target.value)
                                                                 }
-                                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+                                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3 text-black"
                                                             />
                                                         </div>
                                                         <div>
-                                                            <label className="block text-xs text-gray-500 mb-1">
+                                                            <label className="block text-xs text-black mb-1">
                                                                 Hasta
                                                             </label>
                                                             <input
@@ -146,7 +146,7 @@ export default function FilterDrawer({
                                                                 onChange={(e) =>
                                                                     onFilterChange("dateTo", e.target.value)
                                                                 }
-                                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3"
+                                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border py-2 px-3 text-black"
                                                             />
                                                         </div>
                                                     </div>

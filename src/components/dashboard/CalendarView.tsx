@@ -215,6 +215,11 @@ export default function CalendarView({
           >
             {isMobile ? item.client : event.title}
           </span>
+          {isWeekOrDay && (
+            <span className="text-[10px] font-medium opacity-90 whitespace-nowrap">
+              {format(event.start, "h:mm a")}
+            </span>
+          )}
           {onStatusChange && !isMobile && (
             <select
               value={item.status}
@@ -497,6 +502,8 @@ export default function CalendarView({
         }
       `}</style>
 
+
+
       <div className="">
         <div className={`${isMobile ? "h-[500px]" : "h-[650px]"}`}>
           <Calendar
@@ -510,6 +517,16 @@ export default function CalendarView({
             date={date}
             onNavigate={setDate}
             culture="es"
+            formats={{
+              timeGutterFormat: (date: Date, culture: any, localizer: any) =>
+                localizer.format(date, 'h:mm a', culture),
+              eventTimeRangeFormat: ({ start, end }: any, culture: any, localizer: any) =>
+                `${localizer.format(start, 'h:mm a', culture)} - ${localizer.format(end, 'h:mm a', culture)}`,
+              agendaTimeRangeFormat: ({ start, end }: any, culture: any, localizer: any) =>
+                `${localizer.format(start, 'h:mm a', culture)} - ${localizer.format(end, 'h:mm a', culture)}`,
+              agendaTimeFormat: (date: Date, culture: any, localizer: any) =>
+                localizer.format(date, 'h:mm a', culture),
+            }}
             messages={{
               next: "→",
               previous: "←",
@@ -558,23 +575,25 @@ export default function CalendarView({
         </div>
       </div>
 
-      {selectedDateForModal && (
-        <DayAppointmentsModal
-          isOpen={dayModalOpen}
-          onClose={() => setDayModalOpen(false)}
-          date={selectedDateForModal}
-          appointments={items.filter((item) =>
-            isSameDay(parseDateTime(item.date, item.time), selectedDateForModal)
-          )}
-          onEdit={(item) => {
-            setDayModalOpen(false);
-            onEventClick(item);
-          }}
-          onDelete={(itemId) => {
-            if (onDelete) onDelete(itemId);
-          }}
-        />
-      )}
-    </div>
+      {
+        selectedDateForModal && (
+          <DayAppointmentsModal
+            isOpen={dayModalOpen}
+            onClose={() => setDayModalOpen(false)}
+            date={selectedDateForModal}
+            appointments={items.filter((item) =>
+              isSameDay(parseDateTime(item.date, item.time), selectedDateForModal)
+            )}
+            onEdit={(item) => {
+              setDayModalOpen(false);
+              onEventClick(item);
+            }}
+            onDelete={(itemId) => {
+              if (onDelete) onDelete(itemId);
+            }}
+          />
+        )
+      }
+    </div >
   );
 }

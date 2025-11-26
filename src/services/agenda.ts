@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy } from "firebase/firestore";
+import { collection, addDoc, updateDoc, deleteDoc, doc, query, onSnapshot, orderBy, getDoc } from "firebase/firestore";
 import { AgendaItem } from "@/types";
 
 const COLLECTION_NAME = "agendas";
@@ -37,4 +37,14 @@ export const updateAgendaItem = async (userId: string, itemId: string, item: Par
 export const deleteAgendaItem = async (userId: string, itemId: string) => {
     const docRef = doc(db, COLLECTION_NAME, userId, "items", itemId);
     return deleteDoc(docRef);
+};
+
+export const getAgendaItem = async (userId: string, itemId: string) => {
+    const docRef = doc(db, COLLECTION_NAME, userId, "items", itemId);
+    const docSnap = await getDoc(docRef);
+    if (docSnap.exists()) {
+        return { id: docSnap.id, ...docSnap.data() } as AgendaItem;
+    } else {
+        return null;
+    }
 };

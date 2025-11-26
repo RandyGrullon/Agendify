@@ -3,6 +3,7 @@
 import { Menu as MenuIcon, User } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useRouter } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
     const { user } = useAuth();
@@ -21,6 +22,7 @@ export default function Topbar({ onMenuClick }: { onMenuClick: () => void }) {
                     <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200" aria-hidden="true" />
 
                     <div className="relative flex items-center gap-3">
+                        <ThemeToggle />
                         <span className="hidden lg:flex lg:items-center">
                             <span className="text-sm font-semibold leading-6 text-gray-900" aria-hidden="true">
                                 {user?.displayName || user?.email}

@@ -9,7 +9,7 @@ import { MapPin, Clock, DollarSign, User } from 'lucide-react';
 // Helper function to safely parse dates
 const parseDate = (dateString: string | number | undefined | null): Date => {
     if (!dateString) return new Date();
-    
+
     try {
         // Handle Excel serial dates
         if (typeof dateString === 'number') {
@@ -17,20 +17,32 @@ const parseDate = (dateString: string | number | undefined | null): Date => {
             const date = new Date(excelEpoch.getTime() + dateString * 86400000);
             if (!isNaN(date.getTime())) return date;
         }
-        
+
         const dateStr = String(dateString);
-        
+
         if (dateStr.includes('T')) {
             const date = new Date(dateStr);
             if (!isNaN(date.getTime())) return date;
         }
-        
+
         const date = new Date(dateStr + 'T00:00:00');
         if (!isNaN(date.getTime())) return date;
-        
+
         return new Date();
     } catch {
         return new Date();
+    }
+};
+
+const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    try {
+        const [hours, minutes] = timeStr.split(":");
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes));
+        return format(date, "h:mm a");
+    } catch (e) {
+        return timeStr;
     }
 };
 
@@ -81,18 +93,17 @@ export default function KanbanView({ items, onStatusChange, onEventClick }: Kanb
                                 </span>
                             </h3>
                         </div>
-                        
+
                         <Droppable droppableId={column.id}>
                             {(provided, snapshot) => (
                                 <div
                                     ref={provided.innerRef}
                                     {...provided.droppableProps}
-                                    className={`flex-1 p-4 space-y-3 transition-colors min-h-[150px] ${
-                                        snapshot.isDraggingOver ? 'bg-gray-100' : ''
-                                    } ${
+                                    className={`flex-1 p-4 space-y-3 transition-colors min-h-[150px] ${snapshot.isDraggingOver ? 'bg-gray-100' : ''
+                                        } ${
                                         // On mobile, let it grow (overflow-visible). On desktop, scroll (overflow-y-auto).
                                         'overflow-y-visible lg:overflow-y-auto'
-                                    }`}
+                                        }`}
                                 >
                                     {getItemsByStatus(column.id).map((item, index) => (
                                         <Draggable key={item.id} draggableId={item.id} index={index}>
@@ -102,9 +113,8 @@ export default function KanbanView({ items, onStatusChange, onEventClick }: Kanb
                                                     {...provided.draggableProps}
                                                     {...provided.dragHandleProps}
                                                     onClick={() => onEventClick(item)}
-                                                    className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer touch-manipulation ${
-                                                        snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 rotate-2 z-50' : ''
-                                                    }`}
+                                                    className={`bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow cursor-pointer touch-manipulation ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 rotate-2 z-50' : ''
+                                                        }`}
                                                     style={provided.draggableProps.style}
                                                 >
                                                     <div className="flex justify-between items-start mb-2">
@@ -112,16 +122,16 @@ export default function KanbanView({ items, onStatusChange, onEventClick }: Kanb
                                                             {item.client}
                                                         </span>
                                                         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                                            {item.time}
+                                                            {formatTime(item.time)}
                                                         </span>
                                                     </div>
-                                                    
+
                                                     <div className="space-y-2 text-sm text-gray-600">
                                                         <div className="flex items-center gap-2">
                                                             <User size={14} className="text-gray-400" />
                                                             <span className="truncate">{item.service}</span>
                                                         </div>
-                                                        
+
                                                         <div className="flex items-center gap-2">
                                                             <Clock size={14} className="text-gray-400" />
                                                             <span>{format(parseDate(item.date), "d MMM", { locale: es })}</span>

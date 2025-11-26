@@ -64,6 +64,18 @@ const parseDate = (dateString: string | number | undefined | null): Date => {
     }
 };
 
+const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    try {
+        const [hours, minutes] = timeStr.split(":");
+        const date = new Date();
+        date.setHours(parseInt(hours), parseInt(minutes));
+        return format(date, "h:mm a");
+    } catch (e) {
+        return timeStr;
+    }
+};
+
 export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onStatusChange }: AgendaTableProps) {
     const [isMobile, setIsMobile] = useState(false);
 
@@ -130,7 +142,7 @@ export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onSt
                                     </div>
                                     <div className="flex items-center gap-2 text-gray-700">
                                         <Clock size={16} className="text-gray-400" />
-                                        <span>{item.time}</span>
+                                        <span>{formatTime(item.time)}</span>
                                     </div>
                                 </div>
 
@@ -257,7 +269,7 @@ export default function AgendaTable({ items, onEdit, onDelete, onDuplicate, onSt
                                         <div className="text-sm font-medium text-gray-900">
                                             {format(parseDate(item.date), "d MMM yyyy", { locale: es })}
                                         </div>
-                                        <div className="text-sm text-gray-500">{item.time}</div>
+                                        <div className="text-sm text-gray-500">{formatTime(item.time)}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm font-medium text-gray-900">{item.client}</div>

@@ -64,6 +64,18 @@ export default function DayAppointmentsModal({
     setSelectedItem(null); // Go back to list if deleted
   };
 
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return "";
+    try {
+      const [hours, minutes] = timeStr.split(":");
+      const date = new Date();
+      date.setHours(parseInt(hours), parseInt(minutes));
+      return format(date, "h:mm a");
+    } catch (e) {
+      return timeStr;
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
@@ -125,29 +137,28 @@ export default function DayAppointmentsModal({
                           {item.client}
                         </span>
                         <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                          {item.time}
+                          {formatTime(item.time)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between text-sm text-gray-600">
                         <span>{item.service}</span>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            item.status === "confirmed"
+                          className={`text-xs px-2 py-0.5 rounded-full ${item.status === "confirmed"
                               ? "bg-green-100 text-green-700"
                               : item.status === "completed"
-                              ? "bg-blue-100 text-blue-700"
-                              : item.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
+                                ? "bg-blue-100 text-blue-700"
+                                : item.status === "cancelled"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                            }`}
                         >
                           {item.status === "pending"
                             ? "Pendiente"
                             : item.status === "confirmed"
-                            ? "Confirmado"
-                            : item.status === "completed"
-                            ? "Completado"
-                            : "Cancelado"}
+                              ? "Confirmado"
+                              : item.status === "completed"
+                                ? "Completado"
+                                : "Cancelado"}
                         </span>
                       </div>
                     </div>
@@ -179,7 +190,7 @@ export default function DayAppointmentsModal({
                     <p className="text-sm text-gray-500">Horario</p>
                     <p className="font-medium text-gray-900">
                       {format(date, "d 'de' MMMM, yyyy", { locale: es })} •{" "}
-                      {selectedItem.time}
+                      {formatTime(selectedItem.time)}
                     </p>
                   </div>
                 </div>
