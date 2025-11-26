@@ -16,6 +16,7 @@ const serviceSchema = z.object({
     description: z.string().optional(),
     price: z.number().min(0, 'El precio debe ser mayor o igual a 0'),
     duration: z.number().min(1, 'La duración debe ser al menos 1 minuto'),
+    type: z.literal('service'),
 });
 
 type ServiceFormData = z.infer<typeof serviceSchema>;
@@ -37,6 +38,7 @@ export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess,
             description: '',
             price: 0,
             duration: 60,
+            type: 'service',
         }
     });
 
@@ -46,13 +48,14 @@ export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess,
                 setValue('name', serviceToEdit.name);
                 setValue('description', serviceToEdit.description || '');
                 setValue('price', serviceToEdit.price);
-                setValue('duration', serviceToEdit.duration);
+                setValue('duration', serviceToEdit.duration || 60);
             } else {
                 reset({
                     name: initialName || '',
                     description: '',
                     price: 0,
                     duration: 60,
+                    type: 'service',
                 });
             }
         }
@@ -69,7 +72,7 @@ export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess,
             } else {
                 const docRef = await createService(user.uid, data);
                 toast.success('Servicio creado exitosamente');
-                if (onSuccess) onSuccess({ ...data, id: docRef.id, userId: user.uid, createdAt: Date.now(), updatedAt: Date.now() });
+                if (onSuccess) onSuccess({ ...data, id: docRef.id, userId: user.uid, createdAt: Date.now(), updatedAt: Date.now(), type: 'service' });
             }
             onClose();
             reset();
