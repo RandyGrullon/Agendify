@@ -1,3 +1,9 @@
+export interface Collaborator {
+  name: string;
+  payment: number;
+  profit: number; // Ganancia que obtienes por este colaborador
+}
+
 export interface AgendaItem {
   id: string;
   userId: string;
@@ -5,7 +11,8 @@ export interface AgendaItem {
   time: string;
   client: string; // Client Name (kept for backward compatibility and display)
   clientId?: string; // Link to Client document
-  collaborator?: string;
+  collaborator?: string; // Deprecated: kept for backward compatibility
+  collaborators?: Collaborator[]; // New: array of collaborators
   location?: string;
   peopleCount: number;
   quotedAmount: number;
@@ -14,7 +21,7 @@ export interface AgendaItem {
   status: "pending" | "confirmed" | "completed" | "cancelled";
   myProfit: number;
   bank?: string;
-  collaboratorPayment: number;
+  collaboratorPayment: number; // Deprecated: kept for backward compatibility
   comments?: string;
   createdAt: number;
   updatedAt: number;

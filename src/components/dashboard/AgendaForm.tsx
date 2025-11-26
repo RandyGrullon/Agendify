@@ -5,8 +5,8 @@ import { Dialog, Transition, Combobox, Tab } from "@headlessui/react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { AgendaItem, Client, CatalogItem } from "@/types";
-import { X, Check, ChevronsUpDown, UserPlus, Plus } from "lucide-react";
+import { AgendaItem, Client, CatalogItem, Collaborator } from "@/types";
+import { X, Check, ChevronsUpDown, UserPlus, Plus, Trash2 } from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToCatalog } from "@/services/catalog";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -23,16 +23,13 @@ const schema = z.object({
     }, "La fecha no puede ser anterior a hoy"),
     time: z.string().min(1, "Hora requerida").regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Formato de hora inválido (HH:MM)"),
     client: z.string().min(1, "Cliente requerido"),
-    collaborator: z.string().optional(),
     location: z.string().optional(),
     peopleCount: z.coerce.number().min(1, "Mínimo 1 persona").max(1000, "Número demasiado grande"),
     quotedAmount: z.number().min(0, "El monto no puede ser negativo"),
     deposit: z.number().min(0, "El abono no puede ser negativo").optional().or(z.nan()),
     service: z.string().min(1, "Servicio requerido"),
     status: z.enum(['pending', 'confirmed', 'completed', 'cancelled']),
-    myProfit: z.number().min(0, "La ganancia no puede ser negativa"),
     bank: z.string().optional(),
-    collaboratorPayment: z.number().min(0, "El pago no puede ser negativo"),
     comments: z.string().max(500, "Comentarios muy largos (máx. 500 caracteres)").optional(),
 });
 
@@ -55,6 +52,10 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const [serviceQuery, setServiceQuery] = useState("");
     const [isClientFormOpen, setIsClientFormOpen] = useState(false);
     const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+    const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
+    const [newCollaboratorName, setNewCollaboratorName] = useState("");
+    const [newCollaboratorPayment, setNewCollaboratorPayment] = useState<string>("");
+    const [newCollaboratorProfit, setNewCollaboratorProfit] = useState<string>("");
 
     const clientButtonRef = useRef<HTMLButtonElement>(null);
     const serviceButtonRef = useRef<HTMLButtonElement>(null);
@@ -66,8 +67,6 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
             peopleCount: 1,
             quotedAmount: undefined,
             deposit: undefined,
-            myProfit: undefined,
-            collaboratorPayment: undefined,
             date: new Date().toISOString().split('T')[0],
             time: '09:00',
             client: '',
@@ -78,6 +77,11 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const quotedAmount = watch('quotedAmount') || 0;
     const deposit = watch('deposit') || 0;
     const balance = Math.max(0, quotedAmount - deposit);
+    
+    // Calcular totales de colaboradores
+    const totalCollaboratorPayments = collaborators.reduce((sum, collab) => sum + (collab.payment || 0), 0);
+    const totalCollaboratorProfits = collaborators.reduce((sum, collab) => sum + (collab.profit || 0), 0);
+    const calculatedProfit = totalCollaboratorProfits; // Tu ganancia es la suma de las ganancias por cada colaborador
 
     // Subscribe to clients and services
     useEffect(() => {
@@ -105,6 +109,22 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                     setValue(key, initialData[key]);
                 });
 
+                // Load collaborators from initialData
+                if (initialData.collaborators && initialData.collaborators.length > 0) {
+                    setCollaborators(initialData.collaborators);
+                } else if (initialData.collaborator || initialData.collaboratorPayment) {
+                    // Backward compatibility: convert old single collaborator format
+                    const payment = initialData.collaboratorPayment || 0;
+                    const total = initialData.quotedAmount || 0;
+                    setCollaborators([{
+                        name: initialData.collaborator || 'Colaborador',
+                        payment: payment,
+                        profit: Math.max(0, total - payment)
+                    }]);
+                } else {
+                    setCollaborators([]);
+                }
+
                 // Find and set the client
                 let client;
                 if (initialData.clientId) {
@@ -131,8 +151,6 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                     peopleCount: 1,
                     quotedAmount: undefined,
                     deposit: undefined,
-                    myProfit: undefined,
-                    collaboratorPayment: undefined,
                     date: today,
                     time: '09:00',
                     client: '',
@@ -140,6 +158,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                 });
                 setSelectedClient(null);
                 setSelectedService(null);
+                setCollaborators([]);
             }
         }
     }, [initialData, reset, setValue, isOpen]); // Removed clients and services from dependencies to prevent reset on list update
@@ -213,14 +232,61 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
         setSelectedService(service);
         setValue('service', service.name);
         setValue('quotedAmount', service.price);
-        setValue('myProfit', service.price);
         setIsServiceFormOpen(false);
         toast.success('Ítem creado y seleccionado');
+    };
+
+    const addCollaborator = () => {
+        if (!newCollaboratorName.trim()) {
+            toast.error('El nombre del colaborador es requerido');
+            return;
+        }
+        const payment = parseFloat(newCollaboratorPayment) || 0;
+        const profit = parseFloat(newCollaboratorProfit) || 0;
+        
+        if (payment < 0) {
+            toast.error('El pago no puede ser negativo');
+            return;
+        }
+        if (profit < 0) {
+            toast.error('La ganancia no puede ser negativa');
+            return;
+        }
+
+        setCollaborators([...collaborators, {
+            name: newCollaboratorName.trim(),
+            payment: payment,
+            profit: profit
+        }]);
+        setNewCollaboratorName("");
+        setNewCollaboratorPayment("");
+        setNewCollaboratorProfit("");
+    };
+
+    const removeCollaborator = (index: number) => {
+        setCollaborators(collaborators.filter((_, i) => i !== index));
+    };
+
+    const updateCollaborator = (index: number, field: 'name' | 'payment' | 'profit', value: string | number) => {
+        const updated = [...collaborators];
+        if (field === 'name') {
+            updated[index].name = value as string;
+        } else if (field === 'payment') {
+            updated[index].payment = Math.max(0, value as number);
+        } else {
+            updated[index].profit = Math.max(0, value as number);
+        }
+        setCollaborators(updated);
     };
 
     const handleFormSubmit = (data: FormData) => {
         const enhancedData = {
             ...data,
+            myProfit: calculatedProfit,
+            collaborators: collaborators,
+            // For backward compatibility, also save the old fields
+            collaborator: collaborators.length > 0 ? collaborators[0].name : undefined,
+            collaboratorPayment: totalCollaboratorPayments,
             clientId: selectedClient?.id,
             // We could also save serviceId if we wanted to link services strictly
             // serviceId: selectedService?.id 
@@ -258,7 +324,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                 <Dialog.Panel className="relative flex flex-col w-full h-full sm:h-auto transform overflow-hidden sm:rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
                                     {/* Header - Sticky en mobile */}
                                     <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-between">
-                                        <Dialog.Title as="h3" className="text-xl font-bold leading-6 text-gray-900">
+                                        <Dialog.Title as="h3" className="text-xl font-bold leading-6 text-black">
                                             {initialData ? 'Editar Cita' : 'Nueva Cita'}
                                         </Dialog.Title>
                                         <button
@@ -303,23 +369,23 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                         {/* Tab 1: Información de la Cita */}
                                                         <Tab.Panel className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-4">
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                                                <label className="block text-sm font-semibold text-black mb-1">
                                                                     Fecha <span className="text-red-500">*</span>
                                                                 </label>
-                                                                <input {...register("date")} type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900" />
+                                                                <input {...register("date")} type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black" />
                                                                 {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
                                                             </div>
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                                                <label className="block text-sm font-semibold text-black mb-1">
                                                                     Hora <span className="text-red-500">*</span>
                                                                 </label>
-                                                                <input {...register("time")} type="time" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900" />
+                                                                <input {...register("time")} type="time" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black" />
                                                                 {errors.time && <p className="text-red-500 text-xs mt-1">{errors.time.message}</p>}
                                                             </div>
 
                                                             {/* Cliente y Personas en la misma línea */}
                                                             <div className="sm:col-span-3">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                                                <label className="block text-sm font-semibold text-black mb-1">
                                                                     Cliente <span className="text-red-500">*</span>
                                                                 </label>
                                                                 <Controller
@@ -337,7 +403,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                 <div className="relative">
                                                                                     <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                                                                         <Combobox.Input
-                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
+                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-black focus:ring-0"
                                                                                             displayValue={(client: Client | null) => client?.name || ''}
                                                                                             onChange={(event) => setClientQuery(event.target.value)}
                                                                                             onClick={() => !open && clientButtonRef.current?.click()}
@@ -370,7 +436,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                                 Crear nuevo cliente
                                                                                             </button>
                                                                                             {filteredClients.length === 0 && clientQuery !== '' ? (
-                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-black">
                                                                                                     No se encontraron clientes.
                                                                                                 </div>
                                                                                             ) : (
@@ -417,15 +483,15 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                             </div>
 
                                                             <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                                                <label className="block text-sm font-semibold text-black mb-1">
                                                                     Personas <span className="text-red-500">*</span>
                                                                 </label>
-                                                                <input {...register("peopleCount")} type="number" min="1" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900" />
+                                                                <input {...register("peopleCount")} type="number" min="1" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black" />
                                                                 {errors.peopleCount && <p className="text-red-500 text-xs mt-1">{errors.peopleCount.message}</p>}
                                                             </div>
 
                                                             <div className="sm:col-span-4">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                                                <label className="block text-sm font-semibold text-black mb-1">
                                                                     Servicio <span className="text-red-500">*</span>
                                                                 </label>
                                                                 <Controller
@@ -443,7 +509,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                 <div className="relative">
                                                                                     <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                                                                         <Combobox.Input
-                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 placeholder:text-gray-500"
+                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-black focus:ring-0 placeholder:text-gray-500"
                                                                                             displayValue={(service: CatalogItem | null) => service?.name || field.value}
                                                                                             onChange={(event) => {
                                                                                                 setServiceQuery(event.target.value);
@@ -479,7 +545,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                                 Crear nuevo servicio
                                                                                             </button>
                                                                                             {filteredServices.length === 0 && serviceQuery !== '' ? (
-                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
+                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-black">
                                                                                                     No se encontraron servicios.
                                                                                                 </div>
                                                                                             ) : (
@@ -523,10 +589,10 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                 {errors.service && <p className="text-red-500 text-xs mt-1">{errors.service.message}</p>}
                                                             </div>
 
-                                                            {/* Estatus y Colaborador en la misma línea */}
+                                                            {/* Estatus */}
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Estatus</label>
-                                                                <select {...register("status")} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900">
+                                                                <label className="block text-sm font-semibold text-black mb-1">Estatus</label>
+                                                                <select {...register("status")} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black">
                                                                     <option value="pending">Pendiente</option>
                                                                     <option value="confirmed">Confirmado</option>
                                                                     <option value="completed">Completado</option>
@@ -534,21 +600,16 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                 </select>
                                                             </div>
 
+                                                            {/* Ubicación */}
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Colaborador</label>
-                                                                <input {...register("collaborator")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900 placeholder:text-gray-500" placeholder="Nombre del colaborador" />
-                                                            </div>
-
-                                                            {/* Ubicación en toda la línea */}
-                                                            <div className="sm:col-span-4">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Ubicación</label>
-                                                                <input {...register("location")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900 placeholder:text-gray-500" placeholder="Dirección del evento" />
+                                                                <label className="block text-sm font-semibold text-black mb-1">Ubicación</label>
+                                                                <input {...register("location")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black placeholder:text-gray-500" placeholder="Dirección del evento" />
                                                             </div>
 
                                                             {/* Comentarios compartidos */}
                                                             <div className="sm:col-span-4">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Comentarios</label>
-                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-gray-900 placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
+                                                                <label className="block text-sm font-semibold text-black mb-1">Comentarios</label>
+                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-black placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
                                                                 {errors.comments && <p className="text-red-500 text-xs mt-1">{errors.comments.message}</p>}
                                                             </div>
                                                         </Tab.Panel>
@@ -556,19 +617,19 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                         {/* Tab 2: Información de Pago */}
                                                         <Tab.Panel className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
                                                             <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Monto Cotizado</label>
+                                                                <label className="block text-sm font-semibold text-black mb-1">Monto Cotizado</label>
                                                                 <div className="relative">
                                                                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">$</span>
-                                                                    <input {...register("quotedAmount", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 text-gray-900 placeholder:text-gray-400" placeholder="Ingrese monto" />
+                                                                    <input {...register("quotedAmount", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 text-black placeholder:text-gray-400" placeholder="Ingrese monto" />
                                                                 </div>
                                                                 {errors.quotedAmount && <p className="text-red-500 text-xs mt-1">{errors.quotedAmount.message}</p>}
                                                             </div>
 
                                                             <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Abono / Seña</label>
+                                                                <label className="block text-sm font-semibold text-black mb-1">Abono / Seña</label>
                                                                 <div className="relative">
                                                                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 z-10">$</span>
-                                                                    <input {...register("deposit", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 pr-28 text-gray-900 placeholder:text-gray-400" placeholder="Ingrese abono" />
+                                                                    <input {...register("deposit", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 pr-28 text-black placeholder:text-gray-400" placeholder="Ingrese abono" />
                                                                     <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                                                         <span className={`text-xs font-medium ${balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
                                                                             Restan: ${balance.toFixed(2)}
@@ -578,33 +639,167 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                 {errors.deposit && <p className="text-red-500 text-xs mt-1">{errors.deposit.message}</p>}
                                                             </div>
 
-                                                            <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Mi Ganancia</label>
-                                                                <div className="relative">
-                                                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">$</span>
-                                                                    <input {...register("myProfit", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 text-gray-900 placeholder:text-gray-400" placeholder="Ingrese ganancia" />
+                                                            {/* Sección de Colaboradores */}
+                                                            <div className="sm:col-span-2 border-t border-gray-200 pt-5">
+                                                                <label className="block text-sm font-semibold text-black mb-1">Colaboradores</label>
+                                                                <p className="text-xs text-gray-500 mb-3">Agrega cada colaborador que trabaja en esta cita y especifica cuánto le pagas y cuánto ganas por su trabajo</p>
+                                                                
+                                                                {/* Lista de colaboradores existentes */}
+                                                                {collaborators.length > 0 && (
+                                                                    <div className="space-y-2 mb-3">
+                                                                        <div className="grid grid-cols-12 gap-2 text-xs font-medium text-black px-2 mb-1">
+                                                                            <div className="col-span-4">Nombre</div>
+                                                                            <div className="col-span-3">Le Pago</div>
+                                                                            <div className="col-span-3">Gano</div>
+                                                                            <div className="col-span-2"></div>
+                                                                        </div>
+                                                                        {collaborators.map((collab, index) => (
+                                                                            <div key={index} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-md border border-gray-200">
+                                                                                <div className="col-span-4">
+                                                                                    <input
+                                                                                        type="text"
+                                                                                        value={collab.name}
+                                                                                        onChange={(e) => updateCollaborator(index, 'name', e.target.value)}
+                                                                                        className="w-full text-sm rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-1.5 text-black"
+                                                                                        placeholder="Nombre"
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="relative col-span-3">
+                                                                                    <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-gray-500 text-xs">$</span>
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        value={collab.payment}
+                                                                                        onChange={(e) => updateCollaborator(index, 'payment', parseFloat(e.target.value) || 0)}
+                                                                                        min="0"
+                                                                                        step="0.01"
+                                                                                        className="w-full text-sm rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-1.5 pl-5 text-black"
+                                                                                        placeholder="0.00"
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="relative col-span-3">
+                                                                                    <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-green-600 text-xs">$</span>
+                                                                                    <input
+                                                                                        type="number"
+                                                                                        value={collab.profit}
+                                                                                        onChange={(e) => updateCollaborator(index, 'profit', parseFloat(e.target.value) || 0)}
+                                                                                        min="0"
+                                                                                        step="0.01"
+                                                                                        className="w-full text-sm rounded border-green-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-1.5 pl-5 bg-green-50 text-black"
+                                                                                        placeholder="0.00"
+                                                                                    />
+                                                                                </div>
+                                                                                <div className="col-span-2 flex justify-end">
+                                                                                    <button
+                                                                                        type="button"
+                                                                                        onClick={() => removeCollaborator(index)}
+                                                                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                                                        title="Eliminar"
+                                                                                    >
+                                                                                        <Trash2 size={16} />
+                                                                                    </button>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Formulario para agregar nuevo colaborador */}
+                                                                <div className="space-y-3 bg-blue-50 p-4 rounded-md border border-blue-200">
+                                                                    <p className="text-xs font-medium text-blue-900">Agregar Nuevo Colaborador</p>
+                                                                    <div className="grid grid-cols-12 gap-3">
+                                                                        <div className="col-span-4">
+                                                                            <label className="block text-xs font-medium text-black mb-1">Nombre</label>
+                                                                            <input
+                                                                                type="text"
+                                                                                value={newCollaboratorName}
+                                                                                onChange={(e) => setNewCollaboratorName(e.target.value)}
+                                                                                className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-black"
+                                                                                placeholder="Nombre del colaborador"
+                                                                            />
+                                                                        </div>
+                                                                        <div className="col-span-3">
+                                                                            <label className="block text-xs font-medium text-black mb-1">Le Pago</label>
+                                                                            <div className="relative">
+                                                                                <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-gray-500 text-xs">$</span>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    value={newCollaboratorPayment}
+                                                                                    onChange={(e) => setNewCollaboratorPayment(e.target.value)}
+                                                                                    min="0"
+                                                                                    step="0.01"
+                                                                                    className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 pl-6 text-black"
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="col-span-3">
+                                                                            <label className="block text-xs font-medium text-black mb-1">Gano</label>
+                                                                            <div className="relative">
+                                                                                <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-green-600 text-xs">$</span>
+                                                                                <input
+                                                                                    type="number"
+                                                                                    value={newCollaboratorProfit}
+                                                                                    onChange={(e) => setNewCollaboratorProfit(e.target.value)}
+                                                                                    min="0"
+                                                                                    step="0.01"
+                                                                                    className="w-full text-sm rounded-md border-green-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 pl-6 bg-green-50 text-black"
+                                                                                    placeholder="0.00"
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="col-span-2">
+                                                                            <label className="block text-xs font-medium text-transparent mb-1">.</label>
+                                                                            <button
+                                                                                type="button"
+                                                                                onClick={addCollaborator}
+                                                                                className="w-full h-[42px] flex items-center justify-center px-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                                                                                title="Agregar"
+                                                                            >
+                                                                                <Plus size={16} />
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                                {errors.myProfit && <p className="text-red-500 text-xs mt-1">{errors.myProfit.message}</p>}
+
+                                                                {/* Totales */}
+                                                                {collaborators.length > 0 && (
+                                                                    <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
+                                                                        <div className="flex justify-between text-sm">
+                                                                            <span className="text-black">{collaborators.length} colaborador(es)</span>
+                                                                            <span className="text-black">Total que pagas: <span className="font-semibold text-black">${totalCollaboratorPayments.toFixed(2)}</span></span>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </div>
 
-                                                            <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Pago a Colaborador</label>
-                                                                <div className="relative">
-                                                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">$</span>
-                                                                    <input {...register("collaboratorPayment", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 text-gray-900 placeholder:text-gray-400" placeholder="Ingrese pago" />
+                                                            {/* Mi Ganancia Total */}
+                                                            <div className="sm:col-span-2 border-t-2 border-green-300 pt-5">
+                                                                <label className="block text-sm font-semibold text-black mb-1">💰 Mi Ganancia Total</label>
+                                                                <div className="mt-1 block w-full rounded-lg border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md sm:text-sm p-4 pl-10 text-black font-bold relative">
+                                                                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-green-600 text-xl">$</span>
+                                                                    <span className={calculatedProfit > 0 ? 'text-green-700 text-2xl' : 'text-black text-xl'}>
+                                                                        {calculatedProfit.toFixed(2)}
+                                                                    </span>
                                                                 </div>
-                                                                {errors.collaboratorPayment && <p className="text-red-500 text-xs mt-1">{errors.collaboratorPayment.message}</p>}
+                                                                <p className="text-xs text-black mt-2">
+                                                                    Suma de todas las ganancias por colaborador
+                                                                    {collaborators.length > 0 && (
+                                                                        <span className="block mt-1 font-medium text-green-700">
+                                                                            {collaborators.map((c, i) => `$${c.profit.toFixed(2)}`).join(' + ')} = ${totalCollaboratorProfits.toFixed(2)}
+                                                                        </span>
+                                                                    )}
+                                                                </p>
                                                             </div>
 
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Banco</label>
-                                                                <input {...register("bank")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900 placeholder:text-gray-500" placeholder="Banco de pago" />
+                                                                <label className="block text-sm font-semibold text-black mb-1">Banco</label>
+                                                                <input {...register("bank")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black placeholder:text-gray-500" placeholder="Banco de pago" />
                                                             </div>
 
                                                             {/* Comentarios compartidos */}
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Comentarios</label>
-                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-gray-900 placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
+                                                                <label className="block text-sm font-semibold text-black mb-1">Comentarios</label>
+                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-black placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
                                                                 {errors.comments && <p className="text-red-500 text-xs mt-1">{errors.comments.message}</p>}
                                                             </div>
                                                         </Tab.Panel>
