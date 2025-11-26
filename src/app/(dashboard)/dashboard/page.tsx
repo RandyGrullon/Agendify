@@ -14,8 +14,9 @@ import KanbanView from "@/components/dashboard/KanbanView";
 import { Plus, Download, Upload, Calendar as CalendarIcon, DollarSign, Users, TrendingUp, Search, Filter, List, AlertCircle, Layout } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
-import { format, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { format, startOfMonth, endOfMonth, isWithinInterval, startOfWeek, endOfWeek, isToday, parseISO, isSameDay, startOfDay } from "date-fns";
 import { es } from "date-fns/locale";
+import WeeklyCalendarModal from "@/components/dashboard/WeeklyCalendarModal";
 
 export default function DashboardPage() {
     const { user } = useAuth();
@@ -23,6 +24,7 @@ export default function DashboardPage() {
     const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
 
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isWeeklyCalendarOpen, setIsWeeklyCalendarOpen] = useState(false);
 
     // Only keep necessary state for metrics and basic list
     useEffect(() => {
@@ -59,6 +61,35 @@ export default function DashboardPage() {
             .reduce((sum, i) => sum + (i.quotedAmount - (i.deposit || 0)), 0);
 
         return { total, confirmed, pending, totalRevenue, totalProfit, uniqueClients, pendingPayment };
+    }, [items]);
+
+    // Get today's and this week's appointments
+    const { todayAppointments, weekAppointments } = useMemo(() => {
+        const now = new Date();
+        const todayStart = startOfDay(now);
+        const weekStart = startOfWeek(now, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
+        const today = items.filter(item => {
+            const itemDate = typeof item.date === 'number'
+                ? new Date((item.date - 25569) * 86400 * 1000)
+                : parseISO(item.date.toString());
+            return isSameDay(itemDate, todayStart);
+        }).sort((a, b) => a.time.localeCompare(b.time));
+
+        const week = items.filter(item => {
+            const itemDate = typeof item.date === 'number'
+                ? new Date((item.date - 25569) * 86400 * 1000)
+                : parseISO(item.date.toString());
+            return itemDate >= weekStart && itemDate <= weekEnd;
+        }).sort((a, b) => {
+            const dateA = typeof a.date === 'number' ? new Date((a.date - 25569) * 86400 * 1000) : parseISO(a.date.toString());
+            const dateB = typeof b.date === 'number' ? new Date((b.date - 25569) * 86400 * 1000) : parseISO(b.date.toString());
+            if (dateA.getTime() !== dateB.getTime()) return dateA.getTime() - dateB.getTime();
+            return a.time.localeCompare(b.time);
+        });
+
+        return { todayAppointments: today, weekAppointments: week };
     }, [items]);
 
     const handleCreate = async (data: any) => {
@@ -178,17 +209,34 @@ export default function DashboardPage() {
 
             {/* Recent Appointments Preview */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                    <h2 className="text-lg font-semibold text-gray-900">Próximas Citas</h2>
-                    <a href="/appointments" className="text-blue-600 hover:text-blue-800 text-sm font-medium inline-flex items-center gap-1">
-                        Ver todas
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                    </a>
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
+                        <h2 className="text-lg font-semibold text-gray-900">Próximas Citas</h2>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setIsWeeklyCalendarOpen(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium inline-flex items-center gap-2 transition-colors"
+                            >
+                                <CalendarIcon size={16} />
+                                Ver Calendario Semanal
+                            </button>
+                        </div>
+                    </div>
+                    
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                            <p className="text-xs font-medium text-blue-600 mb-1">Citas de Hoy</p>
+                            <p className="text-2xl font-bold text-blue-900">{todayAppointments.length}</p>
+                        </div>
+                        <div className="bg-purple-50 rounded-lg p-3 border border-purple-100">
+                            <p className="text-xs font-medium text-purple-600 mb-1">Citas esta Semana</p>
+                            <p className="text-2xl font-bold text-purple-900">{weekAppointments.length}</p>
+                        </div>
+                    </div>
                 </div>
 
-                {filteredItems.length === 0 ? (
+                {todayAppointments.length === 0 && weekAppointments.length === 0 ? (
                     <div className="p-12 text-center">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
                             <CalendarIcon className="h-8 w-8 text-gray-400" />
@@ -197,50 +245,109 @@ export default function DashboardPage() {
                         <p className="text-gray-400 text-sm mt-1">Comienza creando tu primera cita</p>
                     </div>
                 ) : (
-                    <div className="divide-y divide-gray-100">
-                        {filteredItems.slice(0, 5).map((item) => (
-                            <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
-                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                                    {/* Left side - Client info */}
-                                    <div className="flex items-start gap-3 min-w-0 flex-1">
-                                        <div className={`p-2 rounded-lg flex-shrink-0 ${item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
-                                                item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
-                                                    item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                    <div>
+                        {/* Today's Appointments */}
+                        {todayAppointments.length > 0 && (
+                            <div className="border-b border-gray-200">
+                                <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
+                                    <h3 className="text-sm font-bold text-blue-900">Hoy - {format(new Date(), "EEEE, d 'de' MMMM", { locale: es })}</h3>
+                                </div>
+                                <div className="divide-y divide-gray-100">
+                                    {todayAppointments.map((item) => (
+                                        <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                <div className="flex items-start gap-3 min-w-0 flex-1">
+                                                    <div className={`p-2 rounded-lg flex-shrink-0 ${
+                                                        item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
+                                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                                                        item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
                                                         'bg-red-100 text-red-600'
-                                            }`}>
-                                            <CalendarIcon size={18} />
-                                        </div>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="font-semibold text-gray-900 truncate">{item.client}</p>
-                                            <p className="text-sm text-gray-600 truncate">{item.service}</p>
-                                            <p className="text-xs text-gray-500 mt-0.5">
-                                                {new Date(item.date).toLocaleDateString('es-MX', {
-                                                    weekday: 'short',
-                                                    month: 'short',
-                                                    day: 'numeric'
-                                                })} • {item.time}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Right side - Amount and status */}
-                                    <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-11 sm:pl-0">
-                                        <p className="font-bold text-gray-900 text-lg">
-                                            ${item.quotedAmount.toLocaleString('es-MX')}
-                                        </p>
-                                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
-                                                item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                                    item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                                    }`}>
+                                                        <CalendarIcon size={18} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-semibold text-gray-900 truncate">{item.client}</p>
+                                                        <p className="text-sm text-gray-600 truncate">{item.service}</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">🕐 {item.time}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-11 sm:pl-0">
+                                                    <p className="font-bold text-gray-900 text-lg">
+                                                        ${item.quotedAmount.toLocaleString('es-MX')}
+                                                    </p>
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                                                        item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                        item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
                                                         'bg-red-100 text-red-800'
-                                            }`}>
-                                            {item.status === 'pending' ? 'Pendiente' :
-                                                item.status === 'confirmed' ? 'Confirmado' :
-                                                    item.status === 'completed' ? 'Completado' : 'Cancelado'}
-                                        </span>
-                                    </div>
+                                                    }`}>
+                                                        {item.status === 'pending' ? 'Pendiente' :
+                                                         item.status === 'confirmed' ? 'Confirmado' :
+                                                         item.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
+
+                        {/* This Week's Appointments */}
+                        {weekAppointments.length > 0 && (
+                            <div>
+                                <div className="px-6 py-3 bg-purple-50 border-b border-purple-100">
+                                    <h3 className="text-sm font-bold text-purple-900">Esta Semana</h3>
+                                </div>
+                                <div className="divide-y divide-gray-100">
+                                    {weekAppointments.slice(0, 5).map((item) => (
+                                        <div key={item.id} className="p-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                                {/* Left side - Client info */}
+                                                <div className="flex items-start gap-3 min-w-0 flex-1">
+                                                    <div className={`p-2 rounded-lg flex-shrink-0 ${
+                                                        item.status === 'confirmed' ? 'bg-green-100 text-green-600' :
+                                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-600' :
+                                                        item.status === 'completed' ? 'bg-blue-100 text-blue-600' :
+                                                        'bg-red-100 text-red-600'
+                                                    }`}>
+                                                        <CalendarIcon size={18} />
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-semibold text-gray-900 truncate">{item.client}</p>
+                                                        <p className="text-sm text-gray-600 truncate">{item.service}</p>
+                                                        <p className="text-xs text-gray-500 mt-0.5">
+                                                            {new Date(item.date).toLocaleDateString('es-MX', {
+                                                                weekday: 'short',
+                                                                month: 'short',
+                                                                day: 'numeric'
+                                                            })} • {item.time}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Right side - Amount and status */}
+                                                <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-11 sm:pl-0">
+                                                    <p className="font-bold text-gray-900 text-lg">
+                                                        ${item.quotedAmount.toLocaleString('es-MX')}
+                                                    </p>
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap ${
+                                                        item.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                                        item.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                        item.status === 'completed' ? 'bg-blue-100 text-blue-800' :
+                                                        'bg-red-100 text-red-800'
+                                                    }`}>
+                                                        {item.status === 'pending' ? 'Pendiente' :
+                                                         item.status === 'confirmed' ? 'Confirmado' :
+                                                         item.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -259,6 +366,12 @@ export default function DashboardPage() {
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 onSubmit={handleCreate}
+            />
+            
+            <WeeklyCalendarModal
+                isOpen={isWeeklyCalendarOpen}
+                onClose={() => setIsWeeklyCalendarOpen(false)}
+                appointments={weekAppointments}
             />
         </div>
     );
