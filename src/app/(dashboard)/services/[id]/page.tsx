@@ -3,13 +3,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/providers/AuthProvider';
-import { getServiceById, updateService, deleteService } from '@/services/service';
+import { getCatalogItemById, updateCatalogItem, deleteCatalogItem } from '@/services/catalog';
 import { subscribeToAgenda } from '@/services/agenda';
-import { Service, AgendaItem } from '@/types';
+import { CatalogItem, AgendaItem } from '@/types';
 import { ArrowLeft, Edit, Trash2, DollarSign, Clock, Calendar, TrendingUp, Package, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import ServiceForm from '@/components/dashboard/ServiceForm';
+import CatalogItemForm from '@/components/dashboard/CatalogItemForm';
 import { toast } from 'sonner';
 
 export default function ServiceDetailPage() {
@@ -18,7 +18,7 @@ export default function ServiceDetailPage() {
     const { user } = useAuth();
     const serviceId = params.id as string;
 
-    const [service, setService] = useState<Service | null>(null);
+    const [service, setService] = useState<CatalogItem | null>(null);
     const [appointments, setAppointments] = useState<AgendaItem[]>([]);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ export default function ServiceDetailPage() {
         // Load service data
         const loadService = async () => {
             try {
-                const serviceData = await getServiceById(user.uid, serviceId);
+                const serviceData = await getCatalogItemById(user.uid, serviceId);
                 setService(serviceData);
             } catch (error) {
                 console.error('Error loading service:', error);
@@ -45,7 +45,7 @@ export default function ServiceDetailPage() {
         const unsubscribe = subscribeToAgenda(user.uid, (items) => {
             // Filter appointments for this service
             const serviceAppointments = items.filter(item => item.service === service?.name);
-            setAppointments(serviceAppointments.sort((a, b) => 
+            setAppointments(serviceAppointments.sort((a, b) =>
                 new Date(b.date).getTime() - new Date(a.date).getTime()
             ));
         });
@@ -66,7 +66,7 @@ export default function ServiceDetailPage() {
 
     const handleDelete = async () => {
         if (!user || !service) return;
-        
+
         if (appointments.length > 0) {
             toast.error('No se puede eliminar un servicio con citas asociadas');
             return;
@@ -77,7 +77,7 @@ export default function ServiceDetailPage() {
         }
 
         try {
-            await deleteService(user.uid, service.id);
+            await deleteCatalogItem(user.uid, service.id);
             toast.success('Servicio eliminado exitosamente');
             router.push('/services');
         } catch (error) {
@@ -187,7 +187,7 @@ export default function ServiceDetailPage() {
                                             <span className="text-sm font-medium">Duración</span>
                                         </div>
                                         <p className="text-2xl font-bold text-blue-800">
-                                            {service.duration} min
+                                            {service.duration ? `${service.duration} min` : 'N/A'}
                                         </p>
                                     </div>
                                 </div>
@@ -266,28 +266,26 @@ export default function ServiceDetailPage() {
                                                 key={appointment.id}
                                                 className="group bg-white border border-gray-100 rounded-xl p-5 hover:shadow-md hover:border-purple-200 transition-all duration-200 relative overflow-hidden"
                                             >
-                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${
-                                                    appointment.status === 'confirmed' ? 'bg-green-500' :
-                                                    appointment.status === 'pending' ? 'bg-yellow-500' :
-                                                    appointment.status === 'completed' ? 'bg-blue-500' : 'bg-red-500'
-                                                }`} />
-                                                
+                                                <div className={`absolute left-0 top-0 bottom-0 w-1 ${appointment.status === 'confirmed' ? 'bg-green-500' :
+                                                        appointment.status === 'pending' ? 'bg-yellow-500' :
+                                                            appointment.status === 'completed' ? 'bg-blue-500' : 'bg-red-500'
+                                                    }`} />
+
                                                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pl-2">
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-3 mb-2">
                                                             <h3 className="font-bold text-gray-900 text-lg">{appointment.client}</h3>
-                                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                                                appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
-                                                                appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                                                                appointment.status === 'completed' ? 'bg-blue-100 text-blue-700' :
-                                                                'bg-red-100 text-red-700'
-                                                            }`}>
+                                                            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${appointment.status === 'confirmed' ? 'bg-green-100 text-green-700' :
+                                                                    appointment.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                                                        appointment.status === 'completed' ? 'bg-blue-100 text-blue-700' :
+                                                                            'bg-red-100 text-red-700'
+                                                                }`}>
                                                                 {appointment.status === 'confirmed' ? 'Confirmado' :
-                                                                 appointment.status === 'pending' ? 'Pendiente' :
-                                                                 appointment.status === 'completed' ? 'Completado' : 'Cancelado'}
+                                                                    appointment.status === 'pending' ? 'Pendiente' :
+                                                                        appointment.status === 'completed' ? 'Completado' : 'Cancelado'}
                                                             </span>
                                                         </div>
-                                                        
+
                                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6 text-sm text-gray-600 mt-3">
                                                             <div className="flex items-center gap-2">
                                                                 <Calendar size={16} className="text-gray-400" />
@@ -329,10 +327,10 @@ export default function ServiceDetailPage() {
             </div>
 
             {/* Edit Dialog */}
-            <ServiceForm
+            <CatalogItemForm
                 isOpen={isEditOpen}
                 onClose={() => setIsEditOpen(false)}
-                serviceToEdit={service}
+                itemToEdit={service}
             />
         </div>
     );

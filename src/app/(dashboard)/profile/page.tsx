@@ -32,7 +32,7 @@ export default function ProfilePage() {
     const handleSave = async (data: any) => {
         if (!user) return;
         await saveBusinessSettings(user.uid, data);
-        setSettings({ ...data, userId: user.uid });
+        setSettings({ ...data, userId: user.uid, updatedAt: Date.now() });
     };
 
     if (loading) {

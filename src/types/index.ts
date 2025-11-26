@@ -41,16 +41,38 @@ export interface Client {
   updatedAt: number;
 }
 
-export interface Service {
+// Tipos de ítems en el catálogo
+export type CatalogItemType = "storable" | "digital" | "service";
+
+// Interface base para todos los ítems del catálogo
+export interface CatalogItem {
   id: string;
   userId: string;
+  type: CatalogItemType;
   name: string;
   description?: string;
   price: number;
-  duration: number; // in minutes
+
+  // Campos específicos para Almacenables (productos físicos)
+  stock?: number;
+  minStock?: number;
+  sku?: string;
+  unit?: string; // ej: "unidad", "kg", "litro"
+
+  // Campos específicos para Digitales
+  downloadUrl?: string;
+  fileSize?: string; // ej: "2.5 MB"
+  format?: string; // ej: "PDF", "MP4", "ZIP"
+
+  // Campos específicos para Servicios
+  duration?: number; // en minutos
+
   createdAt: number;
   updatedAt: number;
 }
+
+// Mantener Service como alias para compatibilidad con código existente
+export type Service = CatalogItem;
 
 export interface InvoiceItem {
   id: string;
@@ -107,5 +129,6 @@ export interface BusinessSettings {
   address?: string;
   website?: string;
   taxId?: string;
+  enabledCatalogTypes?: CatalogItemType[]; // Types of catalog items enabled for this business
   updatedAt: number;
 }

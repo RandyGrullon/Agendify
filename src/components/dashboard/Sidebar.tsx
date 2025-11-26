@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { Calendar, Home, Users, Settings, X, Scissors, FileText, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Home, Users, Settings, X, Package, FileText, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { auth } from "@/lib/firebase";
@@ -15,7 +15,7 @@ const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home },
     { name: 'Citas', href: '/appointments', icon: Calendar },
     { name: 'Clientes', href: '/clients', icon: Users },
-    { name: 'Servicios', href: '/services', icon: Scissors },
+    { name: 'Catálogo', href: '/services', icon: Package },
     { name: 'Configuración', href: '/settings', icon: Settings },
 ];
 

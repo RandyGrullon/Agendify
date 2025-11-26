@@ -5,13 +5,13 @@ import { Dialog, Transition, Combobox, Tab } from "@headlessui/react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { AgendaItem, Client, Service } from "@/types";
+import { AgendaItem, Client, CatalogItem } from "@/types";
 import { X, Check, ChevronsUpDown, UserPlus, Plus } from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
-import { subscribeToServices } from "@/services/service";
+import { subscribeToCatalog } from "@/services/catalog";
 import { useAuth } from "@/components/providers/AuthProvider";
 import ClientForm from "./ClientForm";
-import ServiceForm from "./ServiceForm";
+import CatalogItemForm from "./CatalogItemForm";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -48,9 +48,9 @@ interface AgendaFormProps {
 export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: AgendaFormProps) {
     const { user } = useAuth();
     const [clients, setClients] = useState<Client[]>([]);
-    const [services, setServices] = useState<Service[]>([]);
+    const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
     const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-    const [selectedService, setSelectedService] = useState<Service | null>(null);
+    const [selectedService, setSelectedService] = useState<CatalogItem | null>(null);
     const [clientQuery, setClientQuery] = useState("");
     const [serviceQuery, setServiceQuery] = useState("");
     const [isClientFormOpen, setIsClientFormOpen] = useState(false);
@@ -87,8 +87,8 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
             setClients(updatedClients);
         });
 
-        const unsubscribeServices = subscribeToServices(user.uid, (updatedServices) => {
-            setServices(updatedServices);
+        const unsubscribeServices = subscribeToCatalog(user.uid, (updatedItems) => {
+            setCatalogItems(updatedItems);
         });
 
         return () => {
@@ -118,7 +118,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                 }
 
                 // Find and set the service
-                const service = services.find(s => s.name === initialData.service);
+                const service = catalogItems.find(s => s.name === initialData.service);
                 if (service) {
                     setSelectedService(service);
                 }
@@ -158,12 +158,12 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                 if (client) setSelectedClient(client);
             }
 
-            if (!selectedService && services.length > 0) {
-                const service = services.find(s => s.name === initialData.service);
+            if (!selectedService && catalogItems.length > 0) {
+                const service = catalogItems.find(s => s.name === initialData.service);
                 if (service) setSelectedService(service);
             }
         }
-    }, [clients, services, initialData, isOpen, selectedClient, selectedService]);
+    }, [clients, catalogItems, initialData, isOpen, selectedClient, selectedService]);
 
     const filteredClients = clientQuery === ""
         ? clients
@@ -174,8 +174,8 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
         });
 
     const filteredServices = serviceQuery === ""
-        ? services
-        : services.filter((service) => {
+        ? catalogItems
+        : catalogItems.filter((service) => {
             return service.name.toLowerCase().includes(serviceQuery.toLowerCase());
         });
 
@@ -208,14 +208,14 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
         }
     };
 
-    const handleCreateService = (service: Service) => {
+    const handleCreateService = (service: CatalogItem) => {
         // Immediately select the new service
         setSelectedService(service);
         setValue('service', service.name);
         setValue('quotedAmount', service.price);
         setValue('myProfit', service.price);
         setIsServiceFormOpen(false);
-        toast.success('Servicio creado y seleccionado');
+        toast.success('Ítem creado y seleccionado');
     };
 
     const handleFormSubmit = (data: FormData) => {
@@ -444,7 +444,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                     <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                                                                         <Combobox.Input
                                                                                             className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 placeholder:text-gray-500"
-                                                                                            displayValue={(service: Service | null) => service?.name || field.value}
+                                                                                            displayValue={(service: CatalogItem | null) => service?.name || field.value}
                                                                                             onChange={(event) => {
                                                                                                 setServiceQuery(event.target.value);
                                                                                                 field.onChange(event.target.value);
@@ -498,7 +498,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                                                     {service.name}
                                                                                                                 </span>
                                                                                                                 <span className={`block text-xs ${active ? 'text-blue-200' : 'text-gray-500'}`}>
-                                                                                                                    ${service.price} - {service.duration} min
+                                                                                                                    ${service.price}{service.duration ? ` - ${service.duration} min` : ''}
                                                                                                                 </span>
                                                                                                                 {selected ? (
                                                                                                                     <span
@@ -636,9 +636,9 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                 </Dialog.Panel>
                             </Transition.Child>
                         </div>
-                    </div>
-                </Dialog>
-            </Transition.Root>
+                    </div >
+                </Dialog >
+            </Transition.Root >
 
             <ClientForm
                 isOpen={isClientFormOpen}
@@ -648,7 +648,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                 initialName={clientQuery}
             />
 
-            <ServiceForm
+            <CatalogItemForm
                 isOpen={isServiceFormOpen}
                 onClose={() => setIsServiceFormOpen(false)}
                 onSuccess={handleCreateService}
