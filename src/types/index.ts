@@ -1,7 +1,7 @@
-export interface Collaborator {
+export interface CollaboratorPayment {
   name: string;
-  payment: number;
-  profit: number; // Ganancia que obtienes por este colaborador
+  amount: number;
+  paymentType?: 'payment' | 'charge'; // payment = monto fijo a pagar, charge = monto fijo a cobrar
 }
 
 export interface AgendaItem {
@@ -12,7 +12,7 @@ export interface AgendaItem {
   client: string; // Client Name (kept for backward compatibility and display)
   clientId?: string; // Link to Client document
   collaborator?: string; // Deprecated: kept for backward compatibility
-  collaborators?: Collaborator[]; // New: array of collaborators
+  collaborators?: CollaboratorPayment[]; // New: multiple collaborators with individual payments
   location?: string;
   peopleCount: number;
   quotedAmount: number;
@@ -20,6 +20,7 @@ export interface AgendaItem {
   service: string;
   status: "pending" | "confirmed" | "completed" | "cancelled";
   myProfit: number;
+  myPayment?: number; // What I pay myself if I work on this
   bank?: string;
   collaboratorPayment: number; // Deprecated: kept for backward compatibility
   comments?: string;

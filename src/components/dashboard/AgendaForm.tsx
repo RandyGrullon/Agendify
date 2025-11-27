@@ -5,7 +5,7 @@ import { Dialog, Transition, Combobox, Tab } from "@headlessui/react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { AgendaItem, Client, CatalogItem, Collaborator } from "@/types";
+import { AgendaItem, Client, CatalogItem, CollaboratorPayment } from "@/types";
 import { X, Check, ChevronsUpDown, UserPlus, Plus, Trash2 } from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToCatalog } from "@/services/catalog";
@@ -52,10 +52,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const [serviceQuery, setServiceQuery] = useState("");
     const [isClientFormOpen, setIsClientFormOpen] = useState(false);
     const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
-    const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
-    const [newCollaboratorName, setNewCollaboratorName] = useState("");
-    const [newCollaboratorPayment, setNewCollaboratorPayment] = useState<string>("");
-    const [newCollaboratorProfit, setNewCollaboratorProfit] = useState<string>("");
+    const [collaborators, setCollaborators] = useState<CollaboratorPayment[]>([]);
 
     const clientButtonRef = useRef<HTMLButtonElement>(null);
     const serviceButtonRef = useRef<HTMLButtonElement>(null);
@@ -78,10 +75,18 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const deposit = watch('deposit') || 0;
     const balance = Math.max(0, quotedAmount - deposit);
     
-    // Calcular totales de colaboradores
-    const totalCollaboratorPayments = collaborators.reduce((sum, collab) => sum + (collab.payment || 0), 0);
-    const totalCollaboratorProfits = collaborators.reduce((sum, collab) => sum + (collab.profit || 0), 0);
-    const calculatedProfit = totalCollaboratorProfits; // Tu ganancia es la suma de las ganancias por cada colaborador
+    // Calculate total collaborator payments and charges
+    const totalCollaboratorPayments = collaborators.reduce((sum, c) => {
+        if (c.paymentType === 'charge') {
+            // If charge, we collect from them (adds to profit)
+            return sum - c.amount;
+        }
+        // If payment or undefined (backward compatibility), we pay them (subtracts from profit)
+        return sum + c.amount;
+    }, 0);
+    
+    // Calculate profit: Quoted Amount - Sum of Collaborator Payments + Charges
+    const calculatedProfit = Math.max(0, quotedAmount - totalCollaboratorPayments);
 
     // Subscribe to clients and services
     useEffect(() => {
@@ -109,22 +114,6 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                     setValue(key, initialData[key]);
                 });
 
-                // Load collaborators from initialData
-                if (initialData.collaborators && initialData.collaborators.length > 0) {
-                    setCollaborators(initialData.collaborators);
-                } else if (initialData.collaborator || initialData.collaboratorPayment) {
-                    // Backward compatibility: convert old single collaborator format
-                    const payment = initialData.collaboratorPayment || 0;
-                    const total = initialData.quotedAmount || 0;
-                    setCollaborators([{
-                        name: initialData.collaborator || 'Colaborador',
-                        payment: payment,
-                        profit: Math.max(0, total - payment)
-                    }]);
-                } else {
-                    setCollaborators([]);
-                }
-
                 // Find and set the client
                 let client;
                 if (initialData.clientId) {
@@ -141,6 +130,24 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                 const service = catalogItems.find(s => s.name === initialData.service);
                 if (service) {
                     setSelectedService(service);
+                }
+
+                // Load collaborators (support old format too)
+                if (initialData.collaborators && initialData.collaborators.length > 0) {
+                    // Ensure paymentType exists for backward compatibility
+                    setCollaborators(initialData.collaborators.map(c => ({
+                        ...c,
+                        paymentType: c.paymentType || 'payment'
+                    })));
+                } else if (initialData.collaborator) {
+                    // Migrate old single collaborator format
+                    setCollaborators([{ 
+                        name: initialData.collaborator, 
+                        amount: initialData.collaboratorPayment || 0,
+                        paymentType: 'payment'
+                    }]);
+                } else {
+                    setCollaborators([]);
                 }
             } else {
                 // Only reset if we are opening a fresh form, NOT if we are just receiving updates
@@ -236,62 +243,39 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
         toast.success('Ítem creado y seleccionado');
     };
 
-    const addCollaborator = () => {
-        if (!newCollaboratorName.trim()) {
-            toast.error('El nombre del colaborador es requerido');
-            return;
-        }
-        const payment = parseFloat(newCollaboratorPayment) || 0;
-        const profit = parseFloat(newCollaboratorProfit) || 0;
-        
-        if (payment < 0) {
-            toast.error('El pago no puede ser negativo');
-            return;
-        }
-        if (profit < 0) {
-            toast.error('La ganancia no puede ser negativa');
-            return;
-        }
-
-        setCollaborators([...collaborators, {
-            name: newCollaboratorName.trim(),
-            payment: payment,
-            profit: profit
-        }]);
-        setNewCollaboratorName("");
-        setNewCollaboratorPayment("");
-        setNewCollaboratorProfit("");
-    };
-
-    const removeCollaborator = (index: number) => {
-        setCollaborators(collaborators.filter((_, i) => i !== index));
-    };
-
-    const updateCollaborator = (index: number, field: 'name' | 'payment' | 'profit', value: string | number) => {
-        const updated = [...collaborators];
-        if (field === 'name') {
-            updated[index].name = value as string;
-        } else if (field === 'payment') {
-            updated[index].payment = Math.max(0, value as number);
-        } else {
-            updated[index].profit = Math.max(0, value as number);
-        }
-        setCollaborators(updated);
-    };
-
     const handleFormSubmit = (data: FormData) => {
         const enhancedData = {
             ...data,
             myProfit: calculatedProfit,
             collaborators: collaborators,
-            // For backward compatibility, also save the old fields
-            collaborator: collaborators.length > 0 ? collaborators[0].name : undefined,
+            // Keep backward compatibility
+            collaborator: collaborators.length > 0 ? collaborators[0].name : '',
             collaboratorPayment: totalCollaboratorPayments,
             clientId: selectedClient?.id,
             // We could also save serviceId if we wanted to link services strictly
             // serviceId: selectedService?.id 
         };
         onSubmit(enhancedData);
+    };
+
+    const addCollaborator = () => {
+        setCollaborators([...collaborators, { name: '', amount: 0, paymentType: 'payment' }]);
+    };
+
+    const removeCollaborator = (index: number) => {
+        setCollaborators(collaborators.filter((_, i) => i !== index));
+    };
+
+    const updateCollaborator = (index: number, field: 'name' | 'amount' | 'paymentType', value: string | number) => {
+        const updated = [...collaborators];
+        if (field === 'name') {
+            updated[index].name = value as string;
+        } else if (field === 'paymentType') {
+            updated[index].paymentType = value as 'payment' | 'charge';
+        } else {
+            updated[index].amount = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+        }
+        setCollaborators(updated);
     };
 
     return (
@@ -324,7 +308,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                 <Dialog.Panel className="relative flex flex-col w-full h-full sm:h-auto transform overflow-hidden sm:rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-2xl">
                                     {/* Header - Sticky en mobile */}
                                     <div className="sticky top-0 z-10 bg-white border-b border-gray-200 px-4 py-4 sm:px-6 sm:py-5 flex items-center justify-between">
-                                        <Dialog.Title as="h3" className="text-xl font-bold leading-6 text-black">
+                                        <Dialog.Title as="h3" className="text-xl font-bold leading-6 text-gray-900">
                                             {initialData ? 'Editar Cita' : 'Nueva Cita'}
                                         </Dialog.Title>
                                         <button
@@ -369,23 +353,23 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                         {/* Tab 1: Información de la Cita */}
                                                         <Tab.Panel className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-4">
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-black mb-1">
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
                                                                     Fecha <span className="text-red-500">*</span>
                                                                 </label>
-                                                                <input {...register("date")} type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black" />
+                                                                <input {...register("date")} type="date" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900" />
                                                                 {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
                                                             </div>
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-black mb-1">
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
                                                                     Hora <span className="text-red-500">*</span>
                                                                 </label>
-                                                                <input {...register("time")} type="time" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black" />
+                                                                <input {...register("time")} type="time" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900" />
                                                                 {errors.time && <p className="text-red-500 text-xs mt-1">{errors.time.message}</p>}
                                                             </div>
 
                                                             {/* Cliente y Personas en la misma línea */}
                                                             <div className="sm:col-span-3">
-                                                                <label className="block text-sm font-semibold text-black mb-1">
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
                                                                     Cliente <span className="text-red-500">*</span>
                                                                 </label>
                                                                 <Controller
@@ -403,7 +387,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                 <div className="relative">
                                                                                     <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                                                                         <Combobox.Input
-                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-black focus:ring-0"
+                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
                                                                                             displayValue={(client: Client | null) => client?.name || ''}
                                                                                             onChange={(event) => setClientQuery(event.target.value)}
                                                                                             onClick={() => !open && clientButtonRef.current?.click()}
@@ -436,7 +420,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                                 Crear nuevo cliente
                                                                                             </button>
                                                                                             {filteredClients.length === 0 && clientQuery !== '' ? (
-                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-black">
+                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
                                                                                                     No se encontraron clientes.
                                                                                                 </div>
                                                                                             ) : (
@@ -483,15 +467,15 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                             </div>
 
                                                             <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-black mb-1">
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
                                                                     Personas <span className="text-red-500">*</span>
                                                                 </label>
-                                                                <input {...register("peopleCount")} type="number" min="1" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black" />
+                                                                <input {...register("peopleCount")} type="number" min="1" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900" />
                                                                 {errors.peopleCount && <p className="text-red-500 text-xs mt-1">{errors.peopleCount.message}</p>}
                                                             </div>
 
                                                             <div className="sm:col-span-4">
-                                                                <label className="block text-sm font-semibold text-black mb-1">
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">
                                                                     Servicio <span className="text-red-500">*</span>
                                                                 </label>
                                                                 <Controller
@@ -509,7 +493,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                 <div className="relative">
                                                                                     <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                                                                         <Combobox.Input
-                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-black focus:ring-0 placeholder:text-gray-500"
+                                                                                            className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 placeholder:text-gray-500"
                                                                                             displayValue={(service: CatalogItem | null) => service?.name || field.value}
                                                                                             onChange={(event) => {
                                                                                                 setServiceQuery(event.target.value);
@@ -545,7 +529,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                                 Crear nuevo servicio
                                                                                             </button>
                                                                                             {filteredServices.length === 0 && serviceQuery !== '' ? (
-                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-black">
+                                                                                                <div className="relative cursor-default select-none py-2 px-4 text-gray-700">
                                                                                                     No se encontraron servicios.
                                                                                                 </div>
                                                                                             ) : (
@@ -591,8 +575,8 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
 
                                                             {/* Estatus */}
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Estatus</label>
-                                                                <select {...register("status")} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black">
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Estatus</label>
+                                                                <select {...register("status")} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900">
                                                                     <option value="pending">Pendiente</option>
                                                                     <option value="confirmed">Confirmado</option>
                                                                     <option value="completed">Completado</option>
@@ -602,204 +586,181 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
 
                                                             {/* Ubicación */}
                                                             <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Ubicación</label>
-                                                                <input {...register("location")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black placeholder:text-gray-500" placeholder="Dirección del evento" />
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Ubicación</label>
+                                                                <input {...register("location")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900 placeholder:text-gray-500" placeholder="Dirección del evento" />
                                                             </div>
 
                                                             {/* Comentarios compartidos */}
                                                             <div className="sm:col-span-4">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Comentarios</label>
-                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-black placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-1">Comentarios</label>
+                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-gray-900 placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
                                                                 {errors.comments && <p className="text-red-500 text-xs mt-1">{errors.comments.message}</p>}
                                                             </div>
                                                         </Tab.Panel>
 
                                                         {/* Tab 2: Información de Pago */}
-                                                        <Tab.Panel className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-2">
-                                                            <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Monto Cotizado</label>
-                                                                <div className="relative">
-                                                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">$</span>
-                                                                    <input {...register("quotedAmount", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 text-black placeholder:text-gray-400" placeholder="Ingrese monto" />
+                                                        <Tab.Panel className="space-y-6">
+                                                            {/* Summary Cards - Top Section */}
+                                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                                {/* Monto Cotizado Card */}
+                                                                <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm">
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-2">Monto Cotizado</label>
+                                                                    <div className="relative">
+                                                                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">$</span>
+                                                                        <input 
+                                                                            {...register("quotedAmount", { valueAsNumber: true })} 
+                                                                            type="number" 
+                                                                            min="0" 
+                                                                            step="0.01" 
+                                                                            className="block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2.5 pl-7 text-gray-900 font-semibold placeholder:text-gray-400" 
+                                                                            placeholder="0.00" 
+                                                                        />
+                                                                    </div>
+                                                                    {errors.quotedAmount && <p className="text-red-500 text-xs mt-1">{errors.quotedAmount.message}</p>}
                                                                 </div>
-                                                                {errors.quotedAmount && <p className="text-red-500 text-xs mt-1">{errors.quotedAmount.message}</p>}
-                                                            </div>
 
-                                                            <div className="sm:col-span-1">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Abono / Seña</label>
-                                                                <div className="relative">
-                                                                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 z-10">$</span>
-                                                                    <input {...register("deposit", { valueAsNumber: true })} type="number" min="0" step="0.01" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 pl-7 pr-28 text-black placeholder:text-gray-400" placeholder="Ingrese abono" />
-                                                                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                                                        <span className={`text-xs font-medium ${balance > 0 ? 'text-red-500' : 'text-green-500'}`}>
-                                                                            Restan: ${balance.toFixed(2)}
+                                                                {/* Abono Card */}
+                                                                <div className="bg-white p-4 rounded-lg border border-gray-300 shadow-sm">
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-2">Abono / Seña</label>
+                                                                    <div className="relative">
+                                                                        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500">$</span>
+                                                                        <input 
+                                                                            {...register("deposit", { valueAsNumber: true })} 
+                                                                            type="number" 
+                                                                            min="0" 
+                                                                            step="0.01" 
+                                                                            className="block w-full rounded-md border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2.5 pl-7 text-gray-900 font-semibold placeholder:text-gray-400" 
+                                                                            placeholder="0.00" 
+                                                                        />
+                                                                    </div>
+                                                                    {errors.deposit && <p className="text-red-500 text-xs mt-1">{errors.deposit.message}</p>}
+                                                                    <p className={`text-xs font-medium mt-2 ${balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                                                        Restante: ${balance.toFixed(2)}
+                                                                    </p>
+                                                                </div>
+
+                                                                {/* Mi Ganancia Card */}
+                                                                <div className="bg-gray-50 p-4 rounded-lg border-2 border-gray-300">
+                                                                    <label className="block text-xs font-medium text-gray-700 mb-2">Mi Ganancia</label>
+                                                                    <div className="flex items-center h-[42px]">
+                                                                        <span className={`text-2xl font-bold ${calculatedProfit > 0 ? 'text-gray-900' : 'text-gray-500'}`}>
+                                                                            ${calculatedProfit.toFixed(2)}
                                                                         </span>
                                                                     </div>
+                                                                    <p className="text-xs text-gray-600 mt-2">
+                                                                        Calculada automáticamente
+                                                                    </p>
                                                                 </div>
-                                                                {errors.deposit && <p className="text-red-500 text-xs mt-1">{errors.deposit.message}</p>}
                                                             </div>
 
-                                                            {/* Sección de Colaboradores */}
-                                                            <div className="sm:col-span-2 border-t border-gray-200 pt-5">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Colaboradores</label>
-                                                                <p className="text-xs text-gray-500 mb-3">Agrega cada colaborador que trabaja en esta cita y especifica cuánto le pagas y cuánto ganas por su trabajo</p>
-                                                                
-                                                                {/* Lista de colaboradores existentes */}
-                                                                {collaborators.length > 0 && (
-                                                                    <div className="space-y-2 mb-3">
-                                                                        <div className="grid grid-cols-12 gap-2 text-xs font-medium text-black px-2 mb-1">
-                                                                            <div className="col-span-4">Nombre</div>
-                                                                            <div className="col-span-3">Le Pago</div>
-                                                                            <div className="col-span-3">Gano</div>
-                                                                            <div className="col-span-2"></div>
+                                                            {/* Banco */}
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-2">Banco</label>
+                                                                <input 
+                                                                    {...register("bank")} 
+                                                                    type="text" 
+                                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2.5 text-gray-900 placeholder:text-gray-500" 
+                                                                    placeholder="Ej: Banco Popular, BHD León..." 
+                                                                />
+                                                            </div>
+
+                                                            {/* Collaborators Section */}
+                                                            <div className="border border-gray-300 rounded-lg bg-white shadow-sm">
+                                                                <div className="flex items-center justify-between p-5 pb-4 border-b border-gray-200">
+                                                                    <div>
+                                                                        <h3 className="text-sm font-bold text-gray-900">Colaboradores</h3>
+                                                                        <p className="text-xs text-gray-500 mt-0.5">Administra los pagos a tu equipo</p>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={addCollaborator}
+                                                                        className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                                                                    >
+                                                                        <Plus size={16} />
+                                                                        Agregar
+                                                                    </button>
+                                                                </div>
+
+                                                                {collaborators.length === 0 ? (
+                                                                    <div className="text-center py-8 px-5 bg-gray-50 rounded-b-lg border-2 border-dashed border-gray-300 m-5 mt-4">
+                                                                        <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white border border-gray-300 mb-3">
+                                                                            <UserPlus size={24} className="text-gray-400" />
                                                                         </div>
+                                                                        <p className="text-sm text-gray-600 font-medium">Sin colaboradores</p>
+                                                                        <p className="text-xs text-gray-500 mt-1">Agrega colaboradores para gestionar pagos</p>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="max-h-[400px] overflow-y-auto p-5 pt-4 space-y-2.5">
                                                                         {collaborators.map((collab, index) => (
-                                                                            <div key={index} className="grid grid-cols-12 gap-2 items-center bg-gray-50 p-2 rounded-md border border-gray-200">
-                                                                                <div className="col-span-4">
+                                                                            <div key={index} className="flex gap-3 items-start p-3 bg-gray-50 rounded-lg border border-gray-300 hover:border-gray-400 transition-colors">
+                                                                                <div className="flex-1 space-y-3">
+                                                                                    {/* Nombre */}
                                                                                     <input
                                                                                         type="text"
                                                                                         value={collab.name}
                                                                                         onChange={(e) => updateCollaborator(index, 'name', e.target.value)}
-                                                                                        className="w-full text-sm rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-1.5 text-black"
-                                                                                        placeholder="Nombre"
+                                                                                        className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2 text-gray-900"
+                                                                                        placeholder="Nombre del colaborador"
                                                                                     />
+                                                                                    
+                                                                                    {/* Tipo de Pago y Monto */}
+                                                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                                                                        <select
+                                                                                            value={collab.paymentType || 'payment'}
+                                                                                            onChange={(e) => updateCollaborator(index, 'paymentType', e.target.value)}
+                                                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2 text-gray-900"
+                                                                                        >
+                                                                                            <option value="payment">Pagar Monto Fijo</option>
+                                                                                            <option value="charge">Cobrar Monto Fijo</option>
+                                                                                        </select>
+                                                                                        
+                                                                                        <div className="relative">
+                                                                                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-500 text-sm">
+                                                                                                $
+                                                                                            </span>
+                                                                                            <input
+                                                                                                type="number"
+                                                                                                value={collab.amount}
+                                                                                                onChange={(e) => updateCollaborator(index, 'amount', e.target.value)}
+                                                                                                min="0"
+                                                                                                step="0.01"
+                                                                                                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2 pl-7 text-gray-900 font-medium"
+                                                                                                placeholder="0.00"
+                                                                                            />
+                                                                                        </div>
+                                                                                    </div>
                                                                                 </div>
-                                                                                <div className="relative col-span-3">
-                                                                                    <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-gray-500 text-xs">$</span>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        value={collab.payment}
-                                                                                        onChange={(e) => updateCollaborator(index, 'payment', parseFloat(e.target.value) || 0)}
-                                                                                        min="0"
-                                                                                        step="0.01"
-                                                                                        className="w-full text-sm rounded border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-1.5 pl-5 text-black"
-                                                                                        placeholder="0.00"
-                                                                                    />
-                                                                                </div>
-                                                                                <div className="relative col-span-3">
-                                                                                    <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-green-600 text-xs">$</span>
-                                                                                    <input
-                                                                                        type="number"
-                                                                                        value={collab.profit}
-                                                                                        onChange={(e) => updateCollaborator(index, 'profit', parseFloat(e.target.value) || 0)}
-                                                                                        min="0"
-                                                                                        step="0.01"
-                                                                                        className="w-full text-sm rounded border-green-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-1.5 pl-5 bg-green-50 text-black"
-                                                                                        placeholder="0.00"
-                                                                                    />
-                                                                                </div>
-                                                                                <div className="col-span-2 flex justify-end">
-                                                                                    <button
-                                                                                        type="button"
-                                                                                        onClick={() => removeCollaborator(index)}
-                                                                                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                                                                        title="Eliminar"
-                                                                                    >
-                                                                                        <Trash2 size={16} />
-                                                                                    </button>
-                                                                                </div>
+                                                                                <button
+                                                                                    type="button"
+                                                                                    onClick={() => removeCollaborator(index)}
+                                                                                    className="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors mt-0.5"
+                                                                                    title="Eliminar"
+                                                                                >
+                                                                                    <Trash2 size={18} />
+                                                                                </button>
                                                                             </div>
                                                                         ))}
                                                                     </div>
                                                                 )}
-
-                                                                {/* Formulario para agregar nuevo colaborador */}
-                                                                <div className="space-y-3 bg-blue-50 p-4 rounded-md border border-blue-200">
-                                                                    <p className="text-xs font-medium text-blue-900">Agregar Nuevo Colaborador</p>
-                                                                    <div className="grid grid-cols-12 gap-3">
-                                                                        <div className="col-span-4">
-                                                                            <label className="block text-xs font-medium text-black mb-1">Nombre</label>
-                                                                            <input
-                                                                                type="text"
-                                                                                value={newCollaboratorName}
-                                                                                onChange={(e) => setNewCollaboratorName(e.target.value)}
-                                                                                className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 text-black"
-                                                                                placeholder="Nombre del colaborador"
-                                                                            />
-                                                                        </div>
-                                                                        <div className="col-span-3">
-                                                                            <label className="block text-xs font-medium text-black mb-1">Le Pago</label>
-                                                                            <div className="relative">
-                                                                                <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-gray-500 text-xs">$</span>
-                                                                                <input
-                                                                                    type="number"
-                                                                                    value={newCollaboratorPayment}
-                                                                                    onChange={(e) => setNewCollaboratorPayment(e.target.value)}
-                                                                                    min="0"
-                                                                                    step="0.01"
-                                                                                    className="w-full text-sm rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 p-2 pl-6 text-black"
-                                                                                    placeholder="0.00"
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="col-span-3">
-                                                                            <label className="block text-xs font-medium text-black mb-1">Gano</label>
-                                                                            <div className="relative">
-                                                                                <span className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none text-green-600 text-xs">$</span>
-                                                                                <input
-                                                                                    type="number"
-                                                                                    value={newCollaboratorProfit}
-                                                                                    onChange={(e) => setNewCollaboratorProfit(e.target.value)}
-                                                                                    min="0"
-                                                                                    step="0.01"
-                                                                                    className="w-full text-sm rounded-md border-green-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 pl-6 bg-green-50 text-black"
-                                                                                    placeholder="0.00"
-                                                                                />
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="col-span-2">
-                                                                            <label className="block text-xs font-medium text-transparent mb-1">.</label>
-                                                                            <button
-                                                                                type="button"
-                                                                                onClick={addCollaborator}
-                                                                                className="w-full h-[42px] flex items-center justify-center px-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-                                                                                title="Agregar"
-                                                                            >
-                                                                                <Plus size={16} />
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-
-                                                                {/* Totales */}
+                                                                
+                                                                {/* Total Summary - Always visible at bottom */}
                                                                 {collaborators.length > 0 && (
-                                                                    <div className="mt-3 pt-3 border-t border-gray-300 space-y-1">
-                                                                        <div className="flex justify-between text-sm">
-                                                                            <span className="text-black">{collaborators.length} colaborador(es)</span>
-                                                                            <span className="text-black">Total que pagas: <span className="font-semibold text-black">${totalCollaboratorPayments.toFixed(2)}</span></span>
-                                                                        </div>
+                                                                    <div className="flex justify-between items-center p-4 bg-gray-100 border-t border-gray-300">
+                                                                        <span className="text-sm font-semibold text-gray-900">Total a Colaboradores</span>
+                                                                        <span className="text-xl font-bold text-gray-900">${totalCollaboratorPayments.toFixed(2)}</span>
                                                                     </div>
                                                                 )}
                                                             </div>
 
-                                                            {/* Mi Ganancia Total */}
-                                                            <div className="sm:col-span-2 border-t-2 border-green-300 pt-5">
-                                                                <label className="block text-sm font-semibold text-black mb-1">💰 Mi Ganancia Total</label>
-                                                                <div className="mt-1 block w-full rounded-lg border-2 border-green-300 bg-gradient-to-r from-green-50 to-emerald-50 shadow-md sm:text-sm p-4 pl-10 text-black font-bold relative">
-                                                                    <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-green-600 text-xl">$</span>
-                                                                    <span className={calculatedProfit > 0 ? 'text-green-700 text-2xl' : 'text-black text-xl'}>
-                                                                        {calculatedProfit.toFixed(2)}
-                                                                    </span>
-                                                                </div>
-                                                                <p className="text-xs text-black mt-2">
-                                                                    Suma de todas las ganancias por colaborador
-                                                                    {collaborators.length > 0 && (
-                                                                        <span className="block mt-1 font-medium text-green-700">
-                                                                            {collaborators.map((c, i) => `$${c.profit.toFixed(2)}`).join(' + ')} = ${totalCollaboratorProfits.toFixed(2)}
-                                                                        </span>
-                                                                    )}
-                                                                </p>
-                                                            </div>
-
-                                                            <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Banco</label>
-                                                                <input {...register("bank")} type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-black placeholder:text-gray-500" placeholder="Banco de pago" />
-                                                            </div>
-
-                                                            {/* Comentarios compartidos */}
-                                                            <div className="sm:col-span-2">
-                                                                <label className="block text-sm font-semibold text-black mb-1">Comentarios</label>
-                                                                <textarea {...register("comments")} rows={3} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 resize-none text-black placeholder:text-gray-500" placeholder="Notas adicionales sobre la cita..." />
+                                                            {/* Comentarios */}
+                                                            <div>
+                                                                <label className="block text-sm font-semibold text-gray-900 mb-2">Comentarios</label>
+                                                                <textarea 
+                                                                    {...register("comments")} 
+                                                                    rows={3} 
+                                                                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-3 resize-none text-gray-900 placeholder:text-gray-500" 
+                                                                    placeholder="Notas adicionales sobre el pago o acuerdos especiales..." 
+                                                                />
                                                                 {errors.comments && <p className="text-red-500 text-xs mt-1">{errors.comments.message}</p>}
                                                             </div>
                                                         </Tab.Panel>
