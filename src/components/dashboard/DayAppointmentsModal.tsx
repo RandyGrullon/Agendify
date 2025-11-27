@@ -160,23 +160,22 @@ export default function DayAppointmentsModal({
                       <div className="flex items-center justify-between text-sm text-gray-600">
                         <span>{item.service}</span>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${
-                            item.status === "confirmed"
+                          className={`text-xs px-2 py-0.5 rounded-full ${item.status === "confirmed"
                               ? "bg-green-100 text-green-700"
                               : item.status === "completed"
-                              ? "bg-blue-100 text-blue-700"
-                              : item.status === "cancelled"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
+                                ? "bg-blue-100 text-blue-700"
+                                : item.status === "cancelled"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-yellow-100 text-yellow-700"
+                            }`}
                         >
                           {item.status === "pending"
                             ? "Pendiente"
                             : item.status === "confirmed"
-                            ? "Confirmado"
-                            : item.status === "completed"
-                            ? "Completado"
-                            : "Cancelado"}
+                              ? "Confirmado"
+                              : item.status === "completed"
+                                ? "Completado"
+                                : "Cancelado"}
                         </span>
                       </div>
                     </div>
@@ -237,17 +236,7 @@ export default function DayAppointmentsModal({
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
-                    <DollarSign size={20} />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Mi Ganancia</p>
-                    <p className="font-medium text-gray-900">
-                      ${selectedItem.myProfit.toLocaleString("es-MX")}
-                    </p>
-                  </div>
-                </div>
+
 
                 {selectedItem.location && (
                   <div className="flex items-start gap-3">
@@ -266,7 +255,7 @@ export default function DayAppointmentsModal({
                 {/* Collaborators Section */}
                 {(selectedItem.collaborators &&
                   selectedItem.collaborators.length > 0) ||
-                selectedItem.collaborator ? (
+                  selectedItem.collaborator ? (
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
                       <Users size={20} />
@@ -276,7 +265,7 @@ export default function DayAppointmentsModal({
                         Colaboradores
                       </p>
                       {selectedItem.collaborators &&
-                      selectedItem.collaborators.length > 0 ? (
+                        selectedItem.collaborators.length > 0 ? (
                         <div className="space-y-2">
                           {selectedItem.collaborators.map((collab, idx) => (
                             <div
@@ -288,11 +277,10 @@ export default function DayAppointmentsModal({
                               </span>
                               <div className="text-right">
                                 <span
-                                  className={`block font-semibold ${
-                                    collab.paymentType === "charge"
+                                  className={`block font-semibold ${collab.paymentType === "charge"
                                       ? "text-green-600"
                                       : "text-orange-600"
-                                  }`}
+                                    }`}
                                 >
                                   {collab.paymentType === "charge" ? "+" : "-"}{" "}
                                   $
