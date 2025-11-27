@@ -71,7 +71,7 @@ export default function SettingsForm({ initialSettings, onSave }: SettingsFormPr
         });
     };
 
-    const catalogTypes: { type: CatalogItemType; label: string; icon: any; description: string }[] = [
+    const catalogTypes: { type: CatalogItemType; label: string; icon: React.ComponentType<any>; description: string }[] = [
         {
             type: 'storable',
             label: 'Almacenables',

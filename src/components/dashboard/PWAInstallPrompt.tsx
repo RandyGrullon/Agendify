@@ -11,20 +11,17 @@ interface BeforeInstallPromptEvent extends Event {
 export default function PWAInstallPrompt() {
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
-    const [isIOS, setIsIOS] = useState(false);
-    const [isStandalone, setIsStandalone] = useState(false);
+    const [isIOS, setIsIOS] = useState(() => {
+        try { return /iPad|iPhone|iPod/.test(navigator.userAgent) && !(((window) as unknown) as { MSStream?: unknown }).MSStream; } catch (e) { return false; }
+    });
+    const [isStandalone, setIsStandalone] = useState(() => {
+        try { return window.matchMedia('(display-mode: standalone)').matches || (((window.navigator) as unknown) as { standalone?: boolean }).standalone || document.referrer.includes('android-app://'); } catch(e) { return false; }
+    });
 
     useEffect(() => {
         // Check if running as PWA
-        const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches 
-            || (window.navigator as any).standalone 
-            || document.referrer.includes('android-app://');
-        
-        setIsStandalone(isInStandaloneMode);
-
-        // Check if iOS
-        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-        setIsIOS(iOS);
+        const isInStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || (((window.navigator) as unknown) as { standalone?: boolean }).standalone || document.referrer.includes('android-app://');
+        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(((window) as unknown) as { MSStream?: unknown }).MSStream;
 
         // Check if user has dismissed the prompt before
         const dismissed = localStorage.getItem("pwa_install_dismissed");

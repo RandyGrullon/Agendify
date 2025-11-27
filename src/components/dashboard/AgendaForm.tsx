@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useState, useRef } from "react";
 import { Dialog, Transition, Combobox, Tab } from "@headlessui/react";
-import { useForm, Controller } from "react-hook-form";
+import { useForm, Controller, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AgendaItem, Client, CatalogItem, CollaboratorPayment } from "@/types";
@@ -57,7 +57,7 @@ type FormData = z.infer<typeof schema>;
 interface AgendaFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: Omit<AgendaItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
   initialData?: AgendaItem | null;
 }
 
@@ -95,7 +95,7 @@ export default function AgendaForm({
     control,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema) as any,
+    resolver: zodResolver(schema) as Resolver<FormData>,
     defaultValues: {
       status: "pending",
       peopleCount: 1,
@@ -154,7 +154,7 @@ export default function AgendaForm({
     if (isOpen) {
       if (initialData) {
         Object.keys(initialData).forEach((key) => {
-          // @ts-ignore
+                // @ts-expect-error initialData contains keys not present in FormData; safely setting values for editing
           setValue(key, initialData[key]);
         });
 

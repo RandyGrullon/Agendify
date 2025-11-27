@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Edit2, Trash2, Clock, DollarSign, Eye, Package, Download, Briefcase, AlertTriangle } from 'lucide-react';
-import { CatalogItem } from '@/types';
+import { CatalogItem, CatalogItemType } from '@/types';
 import { deleteCatalogItem } from '@/services/catalog';
 import { toast } from 'sonner';
 import { useAuth } from '@/components/providers/AuthProvider';
@@ -275,10 +275,10 @@ export default function CatalogItemTable({ items, onEdit }: CatalogItemTableProp
                 />
 
                 <div className="flex gap-2">
-                    {['all', 'storable', 'digital', 'service'].map((type) => (
+                    {(['all', 'storable', 'digital', 'service'] as ('all' | CatalogItemType)[]).map((type) => (
                         <button
                             key={type}
-                            onClick={() => setFilterType(type as any)}
+                                onClick={() => setFilterType(type as 'all' | CatalogItemType)}
                             className={`
                                 px-4 py-2 rounded-lg text-sm font-medium transition-colors
                                 ${filterType === type

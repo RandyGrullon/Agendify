@@ -29,10 +29,10 @@ export default function ProfilePage() {
         fetchSettings();
     }, [user]);
 
-    const handleSave = async (data: any) => {
+    const handleSave = async (data: Partial<BusinessSettings>) => {
         if (!user) return;
         await saveBusinessSettings(user.uid, data);
-        setSettings({ ...data, userId: user.uid, updatedAt: Date.now() });
+        setSettings(prev => ({ ...(prev as BusinessSettings || {}), ...data, userId: user.uid, updatedAt: Date.now() } as BusinessSettings));
     };
 
     if (loading) {

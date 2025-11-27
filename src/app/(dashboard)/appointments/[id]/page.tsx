@@ -77,6 +77,18 @@ export default function AppointmentDetailPage() {
         }
     };
 
+    const formatTime = (timeStr: string) => {
+        if (!timeStr) return "";
+        try {
+            const [hours, minutes] = timeStr.split(":");
+            const date = new Date();
+            date.setHours(parseInt(hours), parseInt(minutes));
+            return format(date, "h:mm a");
+        } catch (e) {
+            return timeStr;
+        }
+    };
+
     const formatDate = (date: string | number) => {
         if (!date) return "N/A";
         try {
@@ -113,7 +125,7 @@ export default function AppointmentDetailPage() {
                             {formatDate(item.date)}
                             <span className="mx-1">•</span>
                             <Clock size={16} />
-                            {item.time}
+                            {formatTime(item.time)}
                         </p>
                     </div>
                     <div className={`px-4 py-2 rounded-full flex items-center gap-2 font-medium ${getStatusColor(item.status)}`}>
@@ -199,22 +211,53 @@ export default function AppointmentDetailPage() {
                             <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label className="text-sm text-gray-500 block">Mi Ganancia</label>
+                                        <label className="text-sm text-gray-500 block">Mi Ganancia Total</label>
                                         <p className="font-medium text-green-700">RD$ {item.myProfit?.toLocaleString() || 0}</p>
                                     </div>
                                     <div>
-                                        <label className="text-sm text-gray-500 block">Pago Colaborador</label>
-                                        <p className="font-medium text-orange-700">RD$ {item.collaboratorPayment?.toLocaleString() || 0}</p>
+                                        <label className="text-sm text-gray-500 block">
+                                            {(item.collaboratorPayment || 0) < 0 ? 'Ganancia de Colaboradores' : 'Pago a Colaboradores'}
+                                        </label>
+                                        <p className={`font-medium ${(item.collaboratorPayment || 0) < 0 ? 'text-green-600' : 'text-orange-700'}`}>
+                                            RD$ {Math.abs(item.collaboratorPayment || 0).toLocaleString()}
+                                        </p>
                                     </div>
                                 </div>
-                                {item.collaborator && (
-                                    <div>
-                                        <label className="text-sm text-gray-500 block">Colaborador</label>
-                                        <p className="font-medium text-gray-900">{item.collaborator}</p>
+                                
+                                {/* Collaborators List */}
+                                {(item.collaborators && item.collaborators.length > 0) || item.collaborator ? (
+                                    <div className="mt-3 pt-3 border-t border-gray-200">
+                                        <label className="text-sm text-gray-500 block mb-2">Detalle Colaboradores</label>
+                                        {item.collaborators && item.collaborators.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {item.collaborators.map((collab, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border border-gray-100 text-sm">
+                                                        <span className="font-medium text-gray-900">{collab.name}</span>
+                                                        <div className="text-right">
+                                                            <span className={`block font-semibold ${collab.paymentType === 'charge' ? 'text-green-600' : 'text-orange-600'}`}>
+                                                                {collab.paymentType === 'charge' ? '+' : '-'} RD$ {Number(collab.amount).toLocaleString()}
+                                                            </span>
+                                                            <span className="text-xs text-gray-500">
+                                                                {collab.paymentType === 'charge' ? 'Cobro (Ganancia)' : 'Pago (Gasto)'}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            // Legacy support
+                                            <div className="flex justify-between items-center bg-white p-2 rounded border border-gray-100 text-sm">
+                                                <span className="font-medium text-gray-900">{item.collaborator}</span>
+                                                <span className="font-semibold text-orange-600">
+                                                    - RD$ {item.collaboratorPayment?.toLocaleString() || 0}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
+                                ) : null}
+
                                 {item.bank && (
-                                    <div>
+                                    <div className="mt-2">
                                         <label className="text-sm text-gray-500 block">Banco</label>
                                         <p className="font-medium text-gray-900">{item.bank}</p>
                                     </div>

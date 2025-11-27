@@ -13,6 +13,8 @@ import {
   DollarSign,
   MapPin,
   ChevronLeft,
+  Users,
+  FileText,
 } from "lucide-react";
 
 interface DayAppointmentsModalProps {
@@ -38,8 +40,12 @@ export default function DayAppointmentsModal({
   // Reset state when modal opens/closes or date changes
   useEffect(() => {
     if (!isOpen) {
-      setSelectedItem(null);
-      setSearchQuery("");
+      // Schedule reset on next microtask to avoid synchronous setState in effect.
+      const id = setTimeout(() => {
+        setSelectedItem(null);
+        setSearchQuery("");
+      }, 0);
+      return () => clearTimeout(id);
     }
   }, [isOpen, date]);
 
@@ -228,6 +234,58 @@ export default function DayAppointmentsModal({
                       <p className="text-sm text-gray-500">Ubicación</p>
                       <p className="font-medium text-gray-900">
                         {selectedItem.location}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Collaborators Section */}
+                {(selectedItem.collaborators && selectedItem.collaborators.length > 0) || selectedItem.collaborator ? (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
+                      <Users size={20} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 mb-1">Colaboradores</p>
+                      {selectedItem.collaborators && selectedItem.collaborators.length > 0 ? (
+                        <div className="space-y-2">
+                          {selectedItem.collaborators.map((collab, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded-md text-sm">
+                              <span className="font-medium text-gray-900">{collab.name}</span>
+                              <div className="text-right">
+                                <span className={`block font-semibold ${collab.paymentType === 'charge' ? 'text-green-600' : 'text-orange-600'}`}>
+                                  {collab.paymentType === 'charge' ? '+' : '-'} ${Number(collab.amount).toLocaleString("es-MX")}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {collab.paymentType === 'charge' ? 'Cobro (Ganancia)' : 'Pago (Gasto)'}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        // Legacy support
+                        <div className="flex justify-between items-center bg-gray-50 p-2 rounded-md text-sm">
+                          <span className="font-medium text-gray-900">{selectedItem.collaborator}</span>
+                          <span className="font-semibold text-orange-600">
+                            - ${selectedItem.collaboratorPayment?.toLocaleString("es-MX") || 0}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Comments Section */}
+                {selectedItem.comments && (
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-gray-100 rounded-lg text-gray-600">
+                      <FileText size={20} />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Comentarios</p>
+                      <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1 bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        {selectedItem.comments}
                       </p>
                     </div>
                   </div>

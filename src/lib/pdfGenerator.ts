@@ -130,7 +130,7 @@ export const generateInvoicePDF = (
   });
 
   // Totals
-  // @ts-ignore
+    // @ts-expect-error TODO: jsPDF types for lastAutoTable aren\'t available; safe to assume exists
   let finalY = doc.lastAutoTable.finalY + 10;
 
   const rightColX = pageWidth - 65;
@@ -265,7 +265,7 @@ export const generateInvoicePDF = (
       },
     });
 
-    // @ts-ignore
+      // @ts-expect-error TODO: jsPDF types for lastAutoTable aren\'t available; safe to assume exists
     finalY = doc.lastAutoTable.finalY + 5;
   }
 

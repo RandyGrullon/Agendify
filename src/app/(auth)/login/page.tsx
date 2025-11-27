@@ -31,8 +31,9 @@ export default function LoginPage() {
             await signInWithEmailAndPassword(auth, data.email, data.password);
             toast.success("Bienvenido de nuevo");
             router.push("/dashboard");
-        } catch (error: any) {
-            toast.error("Error al iniciar sesión: " + error.message);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Error desconocido';
+            toast.error("Error al iniciar sesión: " + msg);
         } finally {
             setIsLoading(false);
         }
@@ -45,8 +46,9 @@ export default function LoginPage() {
             await signInWithPopup(auth, provider);
             toast.success("Bienvenido de nuevo");
             router.push("/dashboard");
-        } catch (error: any) {
-            toast.error("Error con Google: " + error.message);
+        } catch (error: unknown) {
+            const msg = error instanceof Error ? error.message : 'Error desconocido';
+            toast.error("Error con Google: " + msg);
         } finally {
             setIsLoading(false);
         }

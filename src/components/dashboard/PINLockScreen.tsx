@@ -10,7 +10,13 @@ interface PINLockScreenProps {
 export default function PINLockScreen({ onUnlock }: PINLockScreenProps) {
     const [pin, setPin] = useState("");
     const [error, setError] = useState("");
-    const [isSettingPin, setIsSettingPin] = useState(false);
+    const [isSettingPin, setIsSettingPin] = useState(() => {
+        try {
+            return !localStorage.getItem("agendify_pin");
+        } catch (e) {
+            return false;
+        }
+    });
     const [confirmPin, setConfirmPin] = useState("");
     const [step, setStep] = useState<'enter' | 'confirm'>('enter');
     const [showPin, setShowPin] = useState(false);
@@ -18,21 +24,20 @@ export default function PINLockScreen({ onUnlock }: PINLockScreenProps) {
     const [isLocked, setIsLocked] = useState(false);
     const [canUseBiometric, setCanUseBiometric] = useState(false);
 
-    useEffect(() => {
-        // Check if PIN is set
-        const storedPin = localStorage.getItem("agendify_pin");
-        setIsSettingPin(!storedPin);
-
-        // Check if biometric authentication is available
-        checkBiometricAvailability();
-    }, []);
-
-    const checkBiometricAvailability = async () => {
+    async function checkBiometricAvailability() {
         if (window.PublicKeyCredential) {
             const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
             setCanUseBiometric(available);
         }
-    };
+    }
+
+    useEffect(() => {
+        // Check if biometric authentication is available (defer to avoid setState-in-effect lint)
+        const id = setTimeout(() => checkBiometricAvailability(), 0);
+        return () => clearTimeout(id);
+    }, []);
+
+    // ...existing code...
 
     const handleBiometricAuth = async () => {
         try {

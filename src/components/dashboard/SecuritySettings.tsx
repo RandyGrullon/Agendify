@@ -5,8 +5,12 @@ import { Shield, Lock, Fingerprint, Eye, EyeOff, AlertCircle, CheckCircle } from
 import { toast } from "sonner";
 
 export default function SecuritySettings() {
-    const [pinEnabled, setPinEnabled] = useState(false);
-    const [biometricEnabled, setBiometricEnabled] = useState(false);
+    const [pinEnabled, setPinEnabled] = useState(() => {
+        try { return !!localStorage.getItem("agendify_pin"); } catch(e) { return false; }
+    });
+    const [biometricEnabled, setBiometricEnabled] = useState(() => {
+        try { return localStorage.getItem("agendify_biometric_enabled") === "true"; } catch(e) { return false; }
+    });
     const [canUseBiometric, setCanUseBiometric] = useState(false);
     const [showChangePin, setShowChangePin] = useState(false);
     const [currentPin, setCurrentPin] = useState("");
@@ -16,19 +20,13 @@ export default function SecuritySettings() {
     const [autoLockTime, setAutoLockTime] = useState("immediate");
 
     useEffect(() => {
-        // Check current security settings
-        const storedPin = localStorage.getItem("agendify_pin");
-        const biometric = localStorage.getItem("agendify_biometric_enabled");
-        const lockTime = localStorage.getItem("agendify_autolock_time");
-        
-        setPinEnabled(!!storedPin);
-        setBiometricEnabled(biometric === "true");
-        setAutoLockTime(lockTime || "immediate");
-
-        // Check if biometric is available
+        // Only set the auto lock time from localStorage on mount
+        try {
+            const lockTime = localStorage.getItem("agendify_autolock_time");
+            setAutoLockTime(lockTime || "immediate");
+        } catch (e) { }
         checkBiometricAvailability();
     }, []);
-
     const checkBiometricAvailability = async () => {
         if (window.PublicKeyCredential) {
             const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();

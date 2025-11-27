@@ -27,8 +27,9 @@ export default function ForgotPasswordPage() {
         try {
             await sendPasswordResetEmail(auth, data.email);
             toast.success("Se ha enviado un correo de recuperación");
-        } catch (error: any) {
-            toast.error("Error: " + error.message);
+            } catch (error: unknown) {
+                const msg = error instanceof Error ? error.message : 'Error desconocido';
+                toast.error("Error: " + msg);
         } finally {
             setIsLoading(false);
         }

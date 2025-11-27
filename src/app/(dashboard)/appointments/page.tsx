@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useSearchParams } from "next/navigation";
 import {
@@ -29,7 +29,6 @@ export default function AppointmentsPage() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [items, setItems] = useState<AgendaItem[]>([]);
-  const [filteredItems, setFilteredItems] = useState<AgendaItem[]>([]);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -51,13 +50,12 @@ export default function AppointmentsPage() {
     if (user) {
       const unsubscribe = subscribeToAgenda(user.uid, (data) => {
         setItems(data);
-        setFilteredItems(data);
       });
       return () => unsubscribe();
     }
   }, [user]);
 
-  useEffect(() => {
+  const filteredItems = useMemo(() => {
     const lowerTerm = filters.searchTerm.toLowerCase();
     let filtered = items.filter(
       (item) =>
@@ -83,7 +81,6 @@ export default function AppointmentsPage() {
           if (typeof item.date === "number") {
             const excelEpoch = new Date(1899, 11, 30);
             const tempDate = new Date(
-              // @ts-ignore
               excelEpoch.getTime() + item.date * 86400000
             );
             dateStr = tempDate.toISOString().split("T")[0];
@@ -107,10 +104,12 @@ export default function AppointmentsPage() {
       });
     }
 
-    setFilteredItems(filtered);
+    return filtered;
   }, [filters, items]);
 
-  const handleCreate = async (data: any) => {
+  const handleCreate = async (
+    data: Omit<AgendaItem, "id" | "userId" | "createdAt" | "updatedAt">
+  ) => {
     if (!user) return;
     try {
       await addAgendaItem(user.uid, data);
@@ -121,7 +120,7 @@ export default function AppointmentsPage() {
     }
   };
 
-  const handleUpdate = async (data: any) => {
+  const handleUpdate = async (data: Partial<AgendaItem>) => {
     if (!user || !editingItem) return;
     try {
       await updateAgendaItem(user.uid, editingItem.id, data);
@@ -169,8 +168,6 @@ export default function AppointmentsPage() {
     }
   };
 
-
-
   const handleExport = () => {
     // Format data for export
     const exportData = filteredItems.map((item) => {
@@ -187,10 +184,10 @@ export default function AppointmentsPage() {
           item.status === "pending"
             ? "Pendiente"
             : item.status === "confirmed"
-              ? "Confirmado"
-              : item.status === "completed"
-                ? "Completado"
-                : "Cancelado",
+            ? "Confirmado"
+            : item.status === "completed"
+            ? "Completado"
+            : "Cancelado",
         Personas: item.peopleCount,
         Ubicación: item.location || "",
         "Monto Cotizado": item.quotedAmount,
@@ -238,10 +235,10 @@ export default function AppointmentsPage() {
 
   const setThisMonth = () => {
     const now = new Date();
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       dateFrom: format(startOfMonth(now), "yyyy-MM-dd"),
-      dateTo: format(endOfMonth(now), "yyyy-MM-dd")
+      dateTo: format(endOfMonth(now), "yyyy-MM-dd"),
     }));
   };
 
@@ -255,7 +252,7 @@ export default function AppointmentsPage() {
   };
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -263,9 +260,7 @@ export default function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Agenda
-          </h1>
+          <h1 className="text-3xl font-bold text-gray-900">Agenda</h1>
           <p className="text-gray-600 mt-1">
             {filteredItems.length} citas encontradas
           </p>
@@ -276,10 +271,11 @@ export default function AppointmentsPage() {
 
           <button
             onClick={() => setIsFilterOpen(true)}
-            className={`p-2 rounded-full transition-colors ${filters.searchTerm || filters.dateFrom || filters.status !== 'all'
-              ? 'bg-blue-100 text-blue-600'
-              : 'hover:bg-gray-100 text-gray-500'
-              }`}
+            className={`p-2 rounded-full transition-colors ${
+              filters.searchTerm || filters.dateFrom || filters.status !== "all"
+                ? "bg-blue-100 text-blue-600"
+                : "hover:bg-gray-100 text-gray-500"
+            }`}
             title="Filtros"
           >
             <Filter size={20} />
@@ -324,7 +320,6 @@ export default function AppointmentsPage() {
               }}
               onDelete={handleDelete}
               onDuplicate={handleDuplicate}
-
               onStatusChange={handleStatusChange}
             />
           )}

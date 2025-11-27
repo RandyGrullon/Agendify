@@ -25,7 +25,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     const [importing, setImporting] = useState(false);
     const [fileName, setFileName] = useState('');
 
-    const validateRow = (row: any, index: number): ParsedRow => {
+    const validateRow = (row: Record<string, unknown>, index: number): ParsedRow => {
         const errors: string[] = [];
         const data: Partial<AgendaItem> = {};
 
@@ -34,40 +34,42 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         if (!row['FECHA'] && !row.fecha && !row.date) {
             errors.push('Fecha requerida');
         } else {
-            data.date = row['FECHA'] || row.fecha || row.date;
+            const rawDate = row['FECHA'] ?? row.fecha ?? row.date;
+            data.date = typeof rawDate === 'number' ? (rawDate as number) : String(rawDate);
         }
 
         if (!row['HORARIO'] && !row.hora && !row.time) {
             errors.push('Hora requerida');
         } else {
-            data.time = row['HORARIO'] || row.hora || row.time;
+            const rawTime = row['HORARIO'] ?? row.hora ?? row.time;
+            data.time = String(rawTime);
         }
 
         if (!row['CLIENTE'] && !row.cliente && !row.client) {
             errors.push('Cliente requerido');
         } else {
-            data.client = row['CLIENTE'] || row.cliente || row.client;
+            data.client = String(row['CLIENTE'] ?? row.cliente ?? row.client);
         }
 
         if (!row['TIPO DE SERVICIO'] && !row.servicio && !row.service) {
             errors.push('Servicio requerido');
         } else {
-            data.service = row['TIPO DE SERVICIO'] || row.servicio || row.service;
+            data.service = String(row['TIPO DE SERVICIO'] ?? row.servicio ?? row.service);
         }
 
         // Optional fields
-        data.location = row['LUGAR'] || row.ubicacion || row.location || '';
-        data.peopleCount = parseInt(row['CANT. PERSONAS'] || row.personas || row.peopleCount || '1');
-        data.quotedAmount = parseFloat(row['MONTO COTIZACION'] || row.monto || row.quotedAmount || '0');
-        data.comments = row['COMENTARIOS'] || row.comentarios || row.comments || '';
+        data.location = String(row['LUGAR'] ?? row.ubicacion ?? row.location ?? '');
+        data.peopleCount = parseInt(String(row['CANT. PERSONAS'] || row.personas || row.peopleCount || '1'));
+        data.quotedAmount = parseFloat(String(row['MONTO COTIZACION'] || row.monto || row.quotedAmount || '0'));
+        data.comments = String(row['COMENTARIOS'] ?? row.comentarios ?? row.comments ?? '');
         
         // Other fields that might still be useful if present
-        data.collaborator = row.colaborador || row.collaborator || '';
-        data.myProfit = parseFloat(row.ganancia || row.myProfit || '0');
-        data.bank = row.banco || row.bank || '';
-        data.collaboratorPayment = parseFloat(row.pagoColaborador || row.collaboratorPayment || '0');
+        data.collaborator = String(row.colaborador ?? row.collaborator ?? '');
+        data.myProfit = parseFloat(String(row.ganancia || row.myProfit || '0'));
+        data.bank = String(row.banco ?? row.bank ?? '');
+        data.collaboratorPayment = parseFloat(String(row.pagoColaborador || row.collaboratorPayment || '0'));
         
-        const status = (row['STATUS'] || row.estatus || row.status || 'pending').toLowerCase();
+        const status = String(row['STATUS'] ?? row.estatus ?? row.status ?? 'pending').toLowerCase();
         if (['pending', 'confirmed', 'completed', 'cancelled'].includes(status)) {
             data.status = status as 'pending' | 'confirmed' | 'completed' | 'cancelled';
         } else {
@@ -110,7 +112,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 const worksheet = workbook.Sheets[sheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-                const parsed = jsonData.map((row, index) => validateRow(row, index + 1));
+                const parsed = (jsonData as unknown[]).map((row, index) => validateRow(row as Record<string, unknown>, index + 1));
                 setParsedData(parsed);
 
                 const validCount = parsed.filter(p => p.errors.length === 0).length;

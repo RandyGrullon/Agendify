@@ -113,9 +113,10 @@ export default function BillingPage() {
     currentPage * pageSize
   );
 
-  // Reset to page 1 when filters change
+  // Reset to page 1 when filters change (use microtask to avoid synchronous setState in effect warnings)
   useEffect(() => {
-    setCurrentPage(1);
+    const id = setTimeout(() => setCurrentPage(1), 0);
+    return () => clearTimeout(id);
   }, [searchQuery, statusFilter]);
 
   const handleSort = (field: keyof Invoice) => {

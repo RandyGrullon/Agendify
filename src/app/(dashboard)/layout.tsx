@@ -13,25 +13,19 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     const [sidebarOpen, setSidebarOpen] = useState(false);
-    const [isUnlocked, setIsUnlocked] = useState(false);
-    const [pinEnabled, setPinEnabled] = useState(false);
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+    const [isUnlocked, setIsUnlocked] = useState(() => {
+        try { return !localStorage.getItem("agendify_pin"); } catch(e) { return false; }
+    });
+    const [pinEnabled, setPinEnabled] = useState(() => {
+        try { return !!localStorage.getItem("agendify_pin"); } catch(e) { return false; }
+    });
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch(e) { return false; }
+    });
 
     useEffect(() => {
-        // Check if PIN is enabled
+        // Auto-lock behavior based on in-memory pinEnabled
         const storedPin = localStorage.getItem("agendify_pin");
-        setPinEnabled(!!storedPin);
-        
-        // If no PIN is set, app is "unlocked"
-        if (!storedPin) {
-            setIsUnlocked(true);
-        }
-
-        // Load sidebar collapsed state
-        const savedSidebarState = localStorage.getItem('sidebar-collapsed');
-        if (savedSidebarState !== null) {
-            setSidebarCollapsed(savedSidebarState === 'true');
-        }
 
         // Handle auto-lock on visibility change
         const handleVisibilityChange = () => {
@@ -70,11 +64,12 @@ export default function DashboardLayout({
             setSidebarCollapsed(e.detail.collapsed);
         };
         
-        window.addEventListener('sidebar-toggle' as any, handleSidebarToggle as any);
+        const sidebarToggleListener = (e: Event) => handleSidebarToggle(e as unknown as CustomEvent<{ collapsed: boolean }>);
+        window.addEventListener('sidebar-toggle', sidebarToggleListener);
         
         return () => {
             window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('sidebar-toggle' as any, handleSidebarToggle as any);
+            window.removeEventListener('sidebar-toggle', sidebarToggleListener as EventListener);
         };
     }, []);
 

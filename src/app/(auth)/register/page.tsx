@@ -64,17 +64,18 @@ export default function RegisterPage() {
 
             toast.success("Cuenta creada exitosamente");
             router.replace("/dashboard"); // Use replace to prevent going back to register
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Registration error:", error);
             let errorMessage = "Error al registrarse";
-            
-            if (error.code === 'auth/email-already-in-use') {
+            const err = error as { code?: string } | null;
+            const code = err?.code;
+            if (code === "auth/email-already-in-use") {
                 errorMessage = "Este correo electrónico ya está registrado";
-            } else if (error.code === 'auth/invalid-email') {
+            } else if (code === "auth/invalid-email") {
                 errorMessage = "El correo electrónico no es válido";
-            } else if (error.code === 'auth/weak-password') {
+            } else if (code === "auth/weak-password") {
                 errorMessage = "La contraseña es muy débil";
-            } else if (error.code === 'auth/network-request-failed') {
+            } else if (code === "auth/network-request-failed") {
                 errorMessage = "Error de conexión. Verifica tu internet";
             }
 

@@ -22,15 +22,9 @@ const navigation = [
 export default function Sidebar({ isOpen, setIsOpen }: { isOpen: boolean; setIsOpen: (open: boolean) => void }) {
     const pathname = usePathname();
     const router = useRouter();
-    const [isCollapsed, setIsCollapsed] = useState(false);
-
-    // Load collapsed state from localStorage
-    useEffect(() => {
-        const savedState = localStorage.getItem('sidebar-collapsed');
-        if (savedState !== null) {
-            setIsCollapsed(savedState === 'true');
-        }
-    }, []);
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch(e) { return false; }
+    });
 
     // Save collapsed state to localStorage
     const toggleCollapse = () => {

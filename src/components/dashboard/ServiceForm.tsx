@@ -72,7 +72,10 @@ export default function ServiceForm({ isOpen, onClose, serviceToEdit, onSuccess,
             } else {
                 const docRef = await createService(user.uid, data);
                 toast.success('Servicio creado exitosamente');
-                if (onSuccess) onSuccess({ ...data, id: docRef.id, userId: user.uid, createdAt: Date.now(), updatedAt: Date.now(), type: 'service' });
+                if (onSuccess) {
+                    const now = Date.now();
+                    onSuccess({ ...data, id: docRef.id, userId: user.uid, createdAt: now, updatedAt: now, type: 'service' });
+                }
             }
             onClose();
             reset();

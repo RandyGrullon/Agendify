@@ -44,16 +44,16 @@ const tutorialSteps: TutorialStep[] = [
 ];
 
 export default function OnboardingTutorial() {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(() => {
+        try {
+            return !localStorage.getItem("agendify_tutorial_completed");
+        } catch (e) {
+            return false;
+        }
+    });
     const [currentStep, setCurrentStep] = useState(0);
 
-    useEffect(() => {
-        // Check if user has seen the tutorial
-        const hasSeenTutorial = localStorage.getItem("agendify_tutorial_completed");
-        if (!hasSeenTutorial) {
-            setIsOpen(true);
-        }
-    }, []);
+    // No effect needed; initial state derives whether tutorial should be visible.
 
     const handleClose = () => {
         setIsOpen(false);

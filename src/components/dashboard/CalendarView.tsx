@@ -96,7 +96,7 @@ export default function CalendarView({
     };
   });
 
-  const eventStyleGetter = (event: any) => {
+  const eventStyleGetter = (event: { resource: AgendaItem }) => {
     const status = event.resource.status;
     let backgroundColor = "#3b82f6"; // blue-500
     let borderColor = "#2563eb"; // blue-600
@@ -518,14 +518,12 @@ export default function CalendarView({
             onNavigate={setDate}
             culture="es"
             formats={{
-              timeGutterFormat: (date: Date, culture: any, localizer: any) =>
-                localizer.format(date, 'h:mm a', culture),
-              eventTimeRangeFormat: ({ start, end }: any, culture: any, localizer: any) =>
-                `${localizer.format(start, 'h:mm a', culture)} - ${localizer.format(end, 'h:mm a', culture)}`,
-              agendaTimeRangeFormat: ({ start, end }: any, culture: any, localizer: any) =>
-                `${localizer.format(start, 'h:mm a', culture)} - ${localizer.format(end, 'h:mm a', culture)}`,
-              agendaTimeFormat: (date: Date, culture: any, localizer: any) =>
-                localizer.format(date, 'h:mm a', culture),
+              timeGutterFormat: (date: Date) => format(date, 'h:mm a', { locale: es }),
+              eventTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
+                `${format(start, 'h:mm a', { locale: es })} - ${format(end, 'h:mm a', { locale: es })}`,
+              agendaTimeRangeFormat: ({ start, end }: { start: Date; end: Date }) =>
+                `${format(start, 'h:mm a', { locale: es })} - ${format(end, 'h:mm a', { locale: es })}`,
+              agendaTimeFormat: (date: Date) => format(date, 'h:mm a', { locale: es }),
             }}
             messages={{
               next: "→",
