@@ -226,6 +226,18 @@ export default function DayAppointmentsModal({
                   </div>
                 </div>
 
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                    <DollarSign size={20} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-500">Mi Ganancia</p>
+                    <p className="font-medium text-gray-900">
+                      ${selectedItem.myProfit.toLocaleString("es-MX")}
+                    </p>
+                  </div>
+                </div>
+
                 {selectedItem.location && (
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-red-50 rounded-lg text-red-600">
