@@ -4,10 +4,6 @@ import { BusinessSettings, Invoice } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
-
-
-
-
 export const generateInvoicePDF = (
   invoice: Invoice,
   settings: BusinessSettings | null
@@ -130,7 +126,7 @@ export const generateInvoicePDF = (
   });
 
   // Totals
-    // @ts-expect-error TODO: jsPDF types for lastAutoTable aren\'t available; safe to assume exists
+  // @ts-expect-error TODO: jsPDF types for lastAutoTable aren\'t available; safe to assume exists
   let finalY = doc.lastAutoTable.finalY + 10;
 
   const rightColX = pageWidth - 65;
@@ -265,7 +261,7 @@ export const generateInvoicePDF = (
       },
     });
 
-      // @ts-expect-error TODO: jsPDF types for lastAutoTable aren\'t available; safe to assume exists
+    // @ts-expect-error TODO: jsPDF types for lastAutoTable aren\'t available; safe to assume exists
     finalY = doc.lastAutoTable.finalY + 5;
   }
 
@@ -284,7 +280,6 @@ export const generateInvoicePDF = (
   }
 
   // Footer
-
 
   doc.save(
     `factura-${invoice.number}-${invoice.clientName.replace(/\s+/g, "_")}.pdf`

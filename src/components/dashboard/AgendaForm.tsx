@@ -57,7 +57,9 @@ type FormData = z.infer<typeof schema>;
 interface AgendaFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: Omit<AgendaItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => void;
+  onSubmit: (
+    data: Omit<AgendaItem, "id" | "userId" | "createdAt" | "updatedAt">
+  ) => void;
   initialData?: AgendaItem | null;
 }
 
@@ -154,7 +156,7 @@ export default function AgendaForm({
     if (isOpen) {
       if (initialData) {
         Object.keys(initialData).forEach((key) => {
-                // @ts-expect-error initialData contains keys not present in FormData; safely setting values for editing
+          // @ts-expect-error initialData contains keys not present in FormData; safely setting values for editing
           setValue(key, initialData[key]);
         });
 

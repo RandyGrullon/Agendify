@@ -149,22 +149,23 @@ export default function DayAppointmentsModal({
                       <div className="flex items-center justify-between text-sm text-gray-600">
                         <span>{item.service}</span>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${item.status === "confirmed"
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            item.status === "confirmed"
                               ? "bg-green-100 text-green-700"
                               : item.status === "completed"
-                                ? "bg-blue-100 text-blue-700"
-                                : item.status === "cancelled"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                            }`}
+                              ? "bg-blue-100 text-blue-700"
+                              : item.status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
                         >
                           {item.status === "pending"
                             ? "Pendiente"
                             : item.status === "confirmed"
-                              ? "Confirmado"
-                              : item.status === "completed"
-                                ? "Completado"
-                                : "Cancelado"}
+                            ? "Confirmado"
+                            : item.status === "completed"
+                            ? "Completado"
+                            : "Cancelado"}
                         </span>
                       </div>
                     </div>
@@ -240,24 +241,46 @@ export default function DayAppointmentsModal({
                 )}
 
                 {/* Collaborators Section */}
-                {(selectedItem.collaborators && selectedItem.collaborators.length > 0) || selectedItem.collaborator ? (
+                {(selectedItem.collaborators &&
+                  selectedItem.collaborators.length > 0) ||
+                selectedItem.collaborator ? (
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
                       <Users size={20} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-gray-500 mb-1">Colaboradores</p>
-                      {selectedItem.collaborators && selectedItem.collaborators.length > 0 ? (
+                      <p className="text-sm text-gray-500 mb-1">
+                        Colaboradores
+                      </p>
+                      {selectedItem.collaborators &&
+                      selectedItem.collaborators.length > 0 ? (
                         <div className="space-y-2">
                           {selectedItem.collaborators.map((collab, idx) => (
-                            <div key={idx} className="flex justify-between items-center bg-gray-50 p-2 rounded-md text-sm">
-                              <span className="font-medium text-gray-900">{collab.name}</span>
+                            <div
+                              key={idx}
+                              className="flex justify-between items-center bg-gray-50 p-2 rounded-md text-sm"
+                            >
+                              <span className="font-medium text-gray-900">
+                                {collab.name}
+                              </span>
                               <div className="text-right">
-                                <span className={`block font-semibold ${collab.paymentType === 'charge' ? 'text-green-600' : 'text-orange-600'}`}>
-                                  {collab.paymentType === 'charge' ? '+' : '-'} ${Number(collab.amount).toLocaleString("es-MX")}
+                                <span
+                                  className={`block font-semibold ${
+                                    collab.paymentType === "charge"
+                                      ? "text-green-600"
+                                      : "text-orange-600"
+                                  }`}
+                                >
+                                  {collab.paymentType === "charge" ? "+" : "-"}{" "}
+                                  $
+                                  {Number(collab.amount).toLocaleString(
+                                    "es-MX"
+                                  )}
                                 </span>
                                 <span className="text-xs text-gray-500">
-                                  {collab.paymentType === 'charge' ? 'Cobro (Ganancia)' : 'Pago (Gasto)'}
+                                  {collab.paymentType === "charge"
+                                    ? "Cobro (Ganancia)"
+                                    : "Pago (Gasto)"}
                                 </span>
                               </div>
                             </div>
@@ -266,9 +289,14 @@ export default function DayAppointmentsModal({
                       ) : (
                         // Legacy support
                         <div className="flex justify-between items-center bg-gray-50 p-2 rounded-md text-sm">
-                          <span className="font-medium text-gray-900">{selectedItem.collaborator}</span>
+                          <span className="font-medium text-gray-900">
+                            {selectedItem.collaborator}
+                          </span>
                           <span className="font-semibold text-orange-600">
-                            - ${selectedItem.collaboratorPayment?.toLocaleString("es-MX") || 0}
+                            - $
+                            {selectedItem.collaboratorPayment?.toLocaleString(
+                              "es-MX"
+                            ) || 0}
                           </span>
                         </div>
                       )}

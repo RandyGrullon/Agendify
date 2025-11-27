@@ -155,7 +155,9 @@ export default function DashboardPage() {
     return { todayAppointments: today, weekAppointments: week };
   }, [items]);
 
-  const handleCreate = async (data: Omit<AgendaItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>) => {
+  const handleCreate = async (
+    data: Omit<AgendaItem, "id" | "userId" | "createdAt" | "updatedAt">
+  ) => {
     if (!user) return;
     try {
       await addAgendaItem(user.uid, data);
