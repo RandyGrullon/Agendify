@@ -63,7 +63,7 @@ export default function CatalogPage() {
   };
 
   const handleDelete = async (itemId: string) => {
-    const item = catalogItems.find(c => c.id === itemId);
+    const item = catalogItems.find((c) => c.id === itemId);
     if (item) {
       setItemToDelete(item);
       setIsDeleteModalOpen(true);
@@ -174,7 +174,11 @@ export default function CatalogPage() {
         )}
       </div>
 
-      <CatalogItemTable items={catalogItems} onEdit={handleEdit} onDelete={handleDelete} />
+      <CatalogItemTable
+        items={catalogItems}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
 
       <CatalogItemForm
         isOpen={isFormOpen}

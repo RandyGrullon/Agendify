@@ -6,7 +6,15 @@ import { useForm, Controller, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AgendaItem, Client, CatalogItem, CollaboratorPayment } from "@/types";
-import { X, Check, ChevronsUpDown, UserPlus, Plus, Trash2, Clock } from "lucide-react";
+import {
+  X,
+  Check,
+  ChevronsUpDown,
+  UserPlus,
+  Plus,
+  Trash2,
+  Clock,
+} from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToCatalog } from "@/services/catalog";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -16,9 +24,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 const schema = z.object({
-  date: z
-    .string()
-    .min(1, "Fecha requerida"),
+  date: z.string().min(1, "Fecha requerida"),
   time: z
     .string()
     .min(1, "Hora requerida")
@@ -79,10 +85,35 @@ export default function AgendaForm({
 
   // Common time slots
   const timeOptions = [
-    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
-    "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
-    "20:00", "20:30", "21:00", "21:30", "22:00"
+    "08:00",
+    "08:30",
+    "09:00",
+    "09:30",
+    "10:00",
+    "10:30",
+    "11:00",
+    "11:30",
+    "12:00",
+    "12:30",
+    "13:00",
+    "13:30",
+    "14:00",
+    "14:30",
+    "15:00",
+    "15:30",
+    "16:00",
+    "16:30",
+    "17:00",
+    "17:30",
+    "18:00",
+    "18:30",
+    "19:00",
+    "19:30",
+    "20:00",
+    "20:30",
+    "21:00",
+    "21:30",
+    "22:00",
   ];
   // Allow amount to be string for input handling
   const [collaborators, setCollaborators] = useState<
@@ -138,13 +169,16 @@ export default function AgendaForm({
   // Close time picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (isTimePickerOpen && !(event.target as Element).closest('.time-picker-container')) {
+      if (
+        isTimePickerOpen &&
+        !(event.target as Element).closest(".time-picker-container")
+      ) {
         setIsTimePickerOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isTimePickerOpen]);
 
   // Subscribe to clients and services
@@ -485,7 +519,9 @@ export default function AgendaForm({
                                     <div className="relative time-picker-container">
                                       <button
                                         type="button"
-                                        onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}
+                                        onClick={() =>
+                                          setIsTimePickerOpen(!isTimePickerOpen)
+                                        }
                                         className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                                       >
                                         <span className="flex items-center text-gray-900">
@@ -518,7 +554,9 @@ export default function AgendaForm({
                                             <input
                                               type="time"
                                               value={field.value || ""}
-                                              onChange={(e) => field.onChange(e.target.value)}
+                                              onChange={(e) =>
+                                                field.onChange(e.target.value)
+                                              }
                                               className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
                                               placeholder="HH:MM"
                                             />

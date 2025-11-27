@@ -2,7 +2,20 @@ import { useState, useEffect } from "react";
 import { AgendaItem } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { X, Search, Edit2, Trash2, Calendar, Clock, User, DollarSign, MapPin, ChevronLeft, Users, FileText } from "lucide-react";
+import {
+  X,
+  Search,
+  Edit2,
+  Trash2,
+  Calendar,
+  Clock,
+  User,
+  DollarSign,
+  MapPin,
+  ChevronLeft,
+  Users,
+  FileText,
+} from "lucide-react";
 import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
 interface DayAppointmentsModalProps {
