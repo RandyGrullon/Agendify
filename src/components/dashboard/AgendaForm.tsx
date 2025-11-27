@@ -52,7 +52,8 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     const [serviceQuery, setServiceQuery] = useState("");
     const [isClientFormOpen, setIsClientFormOpen] = useState(false);
     const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
-    const [collaborators, setCollaborators] = useState<CollaboratorPayment[]>([]);
+    // Allow amount to be string for input handling
+    const [collaborators, setCollaborators] = useState<(Omit<CollaboratorPayment, 'amount'> & { amount: number | string })[]>([]);
 
     const clientButtonRef = useRef<HTMLButtonElement>(null);
     const serviceButtonRef = useRef<HTMLButtonElement>(null);
@@ -77,12 +78,13 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     
     // Calculate total collaborator payments and charges
     const totalCollaboratorPayments = collaborators.reduce((sum, c) => {
+        const amount = Number(c.amount) || 0;
         if (c.paymentType === 'charge') {
             // If charge, we collect from them (adds to profit)
-            return sum - c.amount;
+            return sum - amount;
         }
         // If payment or undefined (backward compatibility), we pay them (subtracts from profit)
-        return sum + c.amount;
+        return sum + amount;
     }, 0);
     
     // Calculate profit: Quoted Amount - Sum of Collaborator Payments + Charges
@@ -137,13 +139,14 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                     // Ensure paymentType exists for backward compatibility
                     setCollaborators(initialData.collaborators.map(c => ({
                         ...c,
-                        paymentType: c.paymentType || 'payment'
+                        paymentType: c.paymentType || 'payment',
+                        amount: c.amount === 0 ? '' : c.amount
                     })));
                 } else if (initialData.collaborator) {
                     // Migrate old single collaborator format
                     setCollaborators([{ 
                         name: initialData.collaborator, 
-                        amount: initialData.collaboratorPayment || 0,
+                        amount: initialData.collaboratorPayment || '',
                         paymentType: 'payment'
                     }]);
                 } else {
@@ -244,12 +247,18 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     };
 
     const handleFormSubmit = (data: FormData) => {
+        // Ensure amounts are numbers
+        const finalCollaborators = collaborators.map(c => ({
+            ...c,
+            amount: Number(c.amount) || 0
+        }));
+
         const enhancedData = {
             ...data,
             myProfit: calculatedProfit,
-            collaborators: collaborators,
+            collaborators: finalCollaborators,
             // Keep backward compatibility
-            collaborator: collaborators.length > 0 ? collaborators[0].name : '',
+            collaborator: finalCollaborators.length > 0 ? finalCollaborators[0].name : '',
             collaboratorPayment: totalCollaboratorPayments,
             clientId: selectedClient?.id,
             // We could also save serviceId if we wanted to link services strictly
@@ -259,7 +268,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
     };
 
     const addCollaborator = () => {
-        setCollaborators([...collaborators, { name: '', amount: 0, paymentType: 'payment' }]);
+        setCollaborators([...collaborators, { name: '', amount: '', paymentType: 'payment' }]);
     };
 
     const removeCollaborator = (index: number) => {
@@ -273,7 +282,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
         } else if (field === 'paymentType') {
             updated[index].paymentType = value as 'payment' | 'charge';
         } else {
-            updated[index].amount = typeof value === 'number' ? value : parseFloat(value as string) || 0;
+            updated[index].amount = value;
         }
         setCollaborators(updated);
     };
@@ -720,7 +729,7 @@ export default function AgendaForm({ isOpen, onClose, onSubmit, initialData }: A
                                                                                             </span>
                                                                                             <input
                                                                                                 type="number"
-                                                                                                value={collab.amount}
+                                                                                                value={collab.amount === 0 ? '' : collab.amount}
                                                                                                 onChange={(e) => updateCollaborator(index, 'amount', e.target.value)}
                                                                                                 min="0"
                                                                                                 step="0.01"
