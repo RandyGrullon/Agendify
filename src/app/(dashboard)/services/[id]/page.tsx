@@ -10,6 +10,7 @@ import { ArrowLeft, Edit, Trash2, DollarSign, Clock, Calendar, TrendingUp, Packa
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import CatalogItemForm from '@/components/dashboard/CatalogItemForm';
+import DeleteConfirmationModal from '@/components/dashboard/DeleteConfirmationModal';
 import { toast } from 'sonner';
 
 export default function ServiceDetailPage() {
@@ -22,6 +23,7 @@ export default function ServiceDetailPage() {
     const [appointments, setAppointments] = useState<AgendaItem[]>([]);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
         if (!user || !serviceId) return;
@@ -72,9 +74,11 @@ export default function ServiceDetailPage() {
             return;
         }
 
-        if (!window.confirm('¿Estás seguro de eliminar este servicio? Esta acción no se puede deshacer.')) {
-            return;
-        }
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!user || !service) return;
 
         try {
             await deleteCatalogItem(user.uid, service.id);
@@ -331,6 +335,14 @@ export default function ServiceDetailPage() {
                 isOpen={isEditOpen}
                 onClose={() => setIsEditOpen(false)}
                 itemToEdit={service}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Eliminar servicio"
+                message={`¿Estás seguro de que quieres eliminar el servicio "${service?.name}"? Esta acción no se puede deshacer.`}
             />
         </div>
     );

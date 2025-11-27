@@ -19,6 +19,7 @@ import KanbanView from "@/components/dashboard/KanbanView";
 import FilterDrawer from "@/components/dashboard/FilterDrawer";
 import ViewSwitcher from "@/components/dashboard/ViewSwitcher";
 import ActionMenu from "@/components/dashboard/ActionMenu";
+import DeleteConfirmationModal from "@/components/dashboard/DeleteConfirmationModal";
 import { Plus, Filter } from "lucide-react";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -33,6 +34,8 @@ export default function AppointmentsPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<AgendaItem | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<AgendaItem | null>(null);
 
   // Filter states
   const [filters, setFilters] = useState({
@@ -114,9 +117,33 @@ export default function AppointmentsPage() {
     try {
       await addAgendaItem(user.uid, data);
       setIsFormOpen(false);
-      toast.success("Cita creada");
-    } catch (error) {
-      toast.error("Error al crear cita");
+      toast.success("Cita creada exitosamente");
+    } catch (error: any) {
+      console.error("Error al crear cita:", error);
+      let errorMessage = "Error al crear cita";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.code) {
+        switch (error.code) {
+          case "permission-denied":
+            errorMessage = "No tienes permisos para crear citas";
+            break;
+          case "unavailable":
+            errorMessage = "Servicio no disponible. Inténtalo de nuevo";
+            break;
+          case "invalid-argument":
+            errorMessage = "Datos inválidos. Verifica la información";
+            break;
+          case "already-exists":
+            errorMessage = "Ya existe una cita en esa fecha y hora";
+            break;
+          default:
+            errorMessage = `Error: ${error.code}`;
+        }
+      }
+
+      toast.error(errorMessage);
     }
   };
 
@@ -126,20 +153,71 @@ export default function AppointmentsPage() {
       await updateAgendaItem(user.uid, editingItem.id, data);
       setIsFormOpen(false);
       setEditingItem(null);
-      toast.success("Cita actualizada");
-    } catch (error) {
-      toast.error("Error al actualizar cita");
+      toast.success("Cita actualizada exitosamente");
+    } catch (error: any) {
+      console.error("Error al actualizar cita:", error);
+      let errorMessage = "Error al actualizar cita";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.code) {
+        switch (error.code) {
+          case "permission-denied":
+            errorMessage = "No tienes permisos para actualizar citas";
+            break;
+          case "unavailable":
+            errorMessage = "Servicio no disponible. Inténtalo de nuevo";
+            break;
+          case "invalid-argument":
+            errorMessage = "Datos inválidos. Verifica la información";
+            break;
+          case "not-found":
+            errorMessage = "La cita no fue encontrada";
+            break;
+          default:
+            errorMessage = `Error: ${error.code}`;
+        }
+      }
+
+      toast.error(errorMessage);
     }
   };
 
   const handleDelete = async (itemOrId: AgendaItem | string) => {
-    const id = typeof itemOrId === "string" ? itemOrId : itemOrId.id;
-    if (!user || !confirm("¿Estás seguro de eliminar esta cita?")) return;
+    const item = typeof itemOrId === "string" ? null : itemOrId;
+    setItemToDelete(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!user || !itemToDelete) return;
     try {
-      await deleteAgendaItem(user.uid, id);
-      toast.success("Cita eliminada");
-    } catch (error) {
-      toast.error("Error al eliminar cita");
+      await deleteAgendaItem(user.uid, itemToDelete.id);
+      toast.success("Cita eliminada exitosamente");
+      setItemToDelete(null);
+    } catch (error: any) {
+      console.error("Error al eliminar cita:", error);
+      let errorMessage = "Error al eliminar cita";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.code) {
+        switch (error.code) {
+          case "permission-denied":
+            errorMessage = "No tienes permisos para eliminar citas";
+            break;
+          case "unavailable":
+            errorMessage = "Servicio no disponible. Inténtalo de nuevo";
+            break;
+          case "not-found":
+            errorMessage = "La cita no fue encontrada";
+            break;
+          default:
+            errorMessage = `Error: ${error.code}`;
+        }
+      }
+
+      toast.error(errorMessage);
     }
   };
 
@@ -149,9 +227,33 @@ export default function AppointmentsPage() {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { id, ...rest } = item;
       await addAgendaItem(user.uid, { ...rest });
-      toast.success("Cita duplicada");
-    } catch (error) {
-      toast.error("Error al duplicar cita");
+      toast.success("Cita duplicada exitosamente");
+    } catch (error: any) {
+      console.error("Error al duplicar cita:", error);
+      let errorMessage = "Error al duplicar cita";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.code) {
+        switch (error.code) {
+          case "permission-denied":
+            errorMessage = "No tienes permisos para crear citas";
+            break;
+          case "unavailable":
+            errorMessage = "Servicio no disponible. Inténtalo de nuevo";
+            break;
+          case "invalid-argument":
+            errorMessage = "Datos inválidos. Verifica la información";
+            break;
+          case "already-exists":
+            errorMessage = "Ya existe una cita en esa fecha y hora";
+            break;
+          default:
+            errorMessage = `Error: ${error.code}`;
+        }
+      }
+
+      toast.error(errorMessage);
     }
   };
 
@@ -162,9 +264,33 @@ export default function AppointmentsPage() {
     if (!user) return;
     try {
       await updateAgendaItem(user.uid, itemId, { status: newStatus });
-      toast.success("Estado actualizado");
-    } catch (error) {
-      toast.error("Error al actualizar estado");
+      toast.success("Estado actualizado exitosamente");
+    } catch (error: any) {
+      console.error("Error al actualizar estado:", error);
+      let errorMessage = "Error al actualizar estado";
+
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.code) {
+        switch (error.code) {
+          case "permission-denied":
+            errorMessage = "No tienes permisos para actualizar citas";
+            break;
+          case "unavailable":
+            errorMessage = "Servicio no disponible. Inténtalo de nuevo";
+            break;
+          case "invalid-argument":
+            errorMessage = "Estado inválido";
+            break;
+          case "not-found":
+            errorMessage = "La cita no fue encontrada";
+            break;
+          default:
+            errorMessage = `Error: ${error.code}`;
+        }
+      }
+
+      toast.error(errorMessage);
     }
   };
 
@@ -361,6 +487,17 @@ export default function AppointmentsPage() {
         isOpen={isImportOpen}
         onClose={() => setIsImportOpen(false)}
         onImport={handleImport}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar cita"
+        message={`¿Estás seguro de que quieres eliminar la cita de ${itemToDelete?.client} para el servicio "${itemToDelete?.service}"? Esta acción no se puede deshacer.`}
       />
     </div>
   );

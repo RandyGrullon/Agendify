@@ -6,7 +6,7 @@ import { useForm, Controller, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { AgendaItem, Client, CatalogItem, CollaboratorPayment } from "@/types";
-import { X, Check, ChevronsUpDown, UserPlus, Plus, Trash2 } from "lucide-react";
+import { X, Check, ChevronsUpDown, UserPlus, Plus, Trash2, Clock } from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToCatalog } from "@/services/catalog";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -18,12 +18,7 @@ import Link from "next/link";
 const schema = z.object({
   date: z
     .string()
-    .min(1, "Fecha requerida")
-    .refine((date) => {
-      // Compare dates as strings to avoid timezone issues
-      const today = new Date().toISOString().split("T")[0];
-      return date >= today;
-    }, "La fecha no puede ser anterior a hoy"),
+    .min(1, "Fecha requerida"),
   time: z
     .string()
     .min(1, "Hora requerida")
@@ -80,6 +75,15 @@ export default function AgendaForm({
   const [serviceQuery, setServiceQuery] = useState("");
   const [isClientFormOpen, setIsClientFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+
+  // Common time slots
+  const timeOptions = [
+    "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+    "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00", "15:30",
+    "16:00", "16:30", "17:00", "17:30", "18:00", "18:30", "19:00", "19:30",
+    "20:00", "20:30", "21:00", "21:30", "22:00"
+  ];
   // Allow amount to be string for input handling
   const [collaborators, setCollaborators] = useState<
     (Omit<CollaboratorPayment, "amount"> & { amount: number | string })[]
@@ -130,6 +134,18 @@ export default function AgendaForm({
     0,
     quotedAmount - totalCollaboratorPayments
   );
+
+  // Close time picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (isTimePickerOpen && !(event.target as Element).closest('.time-picker-container')) {
+        setIsTimePickerOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isTimePickerOpen]);
 
   // Subscribe to clients and services
   useEffect(() => {
@@ -462,10 +478,55 @@ export default function AgendaForm({
                                 <label className="block text-sm font-semibold text-gray-900 mb-1">
                                   Hora <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                  {...register("time")}
-                                  type="time"
-                                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900"
+                                <Controller
+                                  name="time"
+                                  control={control}
+                                  render={({ field }) => (
+                                    <div className="relative time-picker-container">
+                                      <button
+                                        type="button"
+                                        onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}
+                                        className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                      >
+                                        <span className="flex items-center text-gray-900">
+                                          <Clock className="h-4 w-4 text-gray-400 mr-2" />
+                                          {field.value || "Seleccionar hora"}
+                                        </span>
+                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                          <ChevronsUpDown className="h-4 w-4 text-gray-400" />
+                                        </span>
+                                      </button>
+
+                                      {isTimePickerOpen && (
+                                        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
+                                          <div className="grid grid-cols-4 gap-1 p-2">
+                                            {timeOptions.map((time) => (
+                                              <button
+                                                key={time}
+                                                type="button"
+                                                onClick={() => {
+                                                  field.onChange(time);
+                                                  setIsTimePickerOpen(false);
+                                                }}
+                                                className="rounded px-2 py-1 text-sm text-gray-900 hover:bg-blue-100 hover:text-blue-900 focus:bg-blue-100 focus:text-blue-900"
+                                              >
+                                                {time}
+                                              </button>
+                                            ))}
+                                          </div>
+                                          <div className="border-t border-gray-200 p-2">
+                                            <input
+                                              type="time"
+                                              value={field.value || ""}
+                                              onChange={(e) => field.onChange(e.target.value)}
+                                              className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
+                                              placeholder="HH:MM"
+                                            />
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 />
                                 {errors.time && (
                                   <p className="text-red-500 text-xs mt-1">

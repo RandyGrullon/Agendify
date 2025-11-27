@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { Plus, Package, Download, Briefcase } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { subscribeToCatalog } from "@/services/catalog";
+import { subscribeToCatalog, deleteCatalogItem } from "@/services/catalog";
 import { CatalogItem, BusinessSettings, CatalogItemType } from "@/types";
 import CatalogItemForm from "@/components/dashboard/CatalogItemForm";
 import CatalogItemTable from "@/components/dashboard/CatalogItemTable";
+import DeleteConfirmationModal from "@/components/dashboard/DeleteConfirmationModal";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { toast } from "sonner";
 
 export default function CatalogPage() {
   const { user } = useAuth();
@@ -19,6 +21,8 @@ export default function CatalogPage() {
   const [enabledTypes, setEnabledTypes] = useState<CatalogItemType[]>([
     "service",
   ]);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<CatalogItem | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -56,6 +60,27 @@ export default function CatalogPage() {
   const handleCloseForm = () => {
     setIsFormOpen(false);
     setEditingItem(null);
+  };
+
+  const handleDelete = async (itemId: string) => {
+    const item = catalogItems.find(c => c.id === itemId);
+    if (item) {
+      setItemToDelete(item);
+      setIsDeleteModalOpen(true);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!user || !itemToDelete) return;
+
+    try {
+      await deleteCatalogItem(user.uid, itemToDelete.id);
+      toast.success("Ítem eliminado exitosamente");
+      setItemToDelete(null);
+    } catch (error) {
+      console.error("Error al eliminar ítem:", error);
+      toast.error("Error al eliminar el ítem");
+    }
   };
 
   const storableCount = catalogItems.filter(
@@ -149,13 +174,24 @@ export default function CatalogPage() {
         )}
       </div>
 
-      <CatalogItemTable items={catalogItems} onEdit={handleEdit} />
+      <CatalogItemTable items={catalogItems} onEdit={handleEdit} onDelete={handleDelete} />
 
       <CatalogItemForm
         isOpen={isFormOpen}
         onClose={handleCloseForm}
         itemToEdit={editingItem}
         enabledTypes={enabledTypes}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar ítem"
+        message={`¿Estás seguro de que quieres eliminar el ítem "${itemToDelete?.name}"? Esta acción no se puede deshacer.`}
       />
     </div>
   );

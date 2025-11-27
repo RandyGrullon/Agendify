@@ -7,6 +7,7 @@ import { subscribeToClients, createClient, updateClient, deleteClient } from '@/
 import { Client } from '@/types';
 import ClientForm from '@/components/dashboard/ClientForm';
 import ClientTable from '@/components/dashboard/ClientTable';
+import DeleteConfirmationModal from '@/components/dashboard/DeleteConfirmationModal';
 import { toast } from 'sonner';
 
 export default function ClientsPage() {
@@ -16,6 +17,8 @@ export default function ClientsPage() {
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<Client | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
 
     useEffect(() => {
         if (!user) return;
@@ -55,11 +58,20 @@ export default function ClientsPage() {
     };
 
     const handleDelete = async (clientId: string) => {
-        if (!user) return;
+        const client = clients.find(c => c.id === clientId);
+        if (client) {
+            setClientToDelete(client);
+            setIsDeleteModalOpen(true);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!user || !clientToDelete) return;
 
         try {
-            await deleteClient(user.uid, clientId);
+            await deleteClient(user.uid, clientToDelete.id);
             toast.success('Cliente eliminado exitosamente');
+            setClientToDelete(null);
         } catch (error) {
             console.error('Error al eliminar cliente:', error);
             toast.error('Error al eliminar cliente');
@@ -130,6 +142,17 @@ export default function ClientsPage() {
                 onSubmit={editingClient ? handleUpdate : handleCreate}
                 initialData={editingClient}
                 title={editingClient ? 'Editar Cliente' : 'Nuevo Cliente'}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => {
+                    setIsDeleteModalOpen(false);
+                    setClientToDelete(null);
+                }}
+                onConfirm={handleConfirmDelete}
+                title="Eliminar cliente"
+                message={`¿Estás seguro de que quieres eliminar al cliente "${clientToDelete?.name}"? Esta acción no se puede deshacer.`}
             />
         </div>
     );

@@ -10,6 +10,7 @@ import { ArrowLeft, Edit, Trash2, Mail, Phone, MapPin, Calendar, DollarSign, Pac
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import ClientForm from '@/components/dashboard/ClientForm';
+import DeleteConfirmationModal from '@/components/dashboard/DeleteConfirmationModal';
 import { toast } from 'sonner';
 
 export default function ClientDetailPage() {
@@ -22,6 +23,7 @@ export default function ClientDetailPage() {
     const [appointments, setAppointments] = useState<AgendaItem[]>([]);
     const [isEditOpen, setIsEditOpen] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
     useEffect(() => {
         if (!user || !clientId) return;
@@ -79,11 +81,11 @@ export default function ClientDetailPage() {
     };
 
     const handleDelete = async () => {
+        setIsDeleteModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
         if (!user || !client) return;
-        
-        if (!window.confirm('¿Estás seguro de eliminar este cliente? Esta acción no se puede deshacer.')) {
-            return;
-        }
 
         try {
             await deleteClient(user.uid, client.id);
@@ -362,6 +364,14 @@ export default function ClientDetailPage() {
                 onSubmit={handleUpdate}
                 initialData={client}
                 title="Editar Cliente"
+            />
+
+            <DeleteConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Eliminar cliente"
+                message={`¿Estás seguro de que quieres eliminar al cliente "${client?.name}"? Esta acción no se puede deshacer.`}
             />
         </div>
     );

@@ -2,20 +2,8 @@ import { useState, useEffect } from "react";
 import { AgendaItem } from "@/types";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import {
-  X,
-  Search,
-  Edit2,
-  Trash2,
-  Calendar,
-  Clock,
-  User,
-  DollarSign,
-  MapPin,
-  ChevronLeft,
-  Users,
-  FileText,
-} from "lucide-react";
+import { X, Search, Edit2, Trash2, Calendar, Clock, User, DollarSign, MapPin, ChevronLeft, Users, FileText } from "lucide-react";
+import DeleteConfirmationModal from "./DeleteConfirmationModal";
 
 interface DayAppointmentsModalProps {
   isOpen: boolean;
@@ -36,6 +24,8 @@ export default function DayAppointmentsModal({
 }: DayAppointmentsModalProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedItem, setSelectedItem] = useState<AgendaItem | null>(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<AgendaItem | null>(null);
 
   // Reset state when modal opens/closes or date changes
   useEffect(() => {
@@ -65,9 +55,17 @@ export default function DayAppointmentsModal({
     // Let's assume the parent handles the form opening.
   };
 
-  const handleDelete = (itemId: string) => {
-    onDelete(itemId);
-    setSelectedItem(null); // Go back to list if deleted
+  const handleDelete = (item: AgendaItem) => {
+    setItemToDelete(item);
+    setIsDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (itemToDelete) {
+      onDelete(itemToDelete.id);
+      setSelectedItem(null); // Go back to list if deleted
+      setItemToDelete(null);
+    }
   };
 
   const formatTime = (timeStr: string) => {
@@ -341,7 +339,7 @@ export default function DayAppointmentsModal({
                   Editar
                 </button>
                 <button
-                  onClick={() => handleDelete(selectedItem.id)}
+                  onClick={() => handleDelete(selectedItem)}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-white border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition-colors font-medium"
                 >
                   <Trash2 size={18} />
@@ -352,6 +350,17 @@ export default function DayAppointmentsModal({
           )}
         </div>
       </div>
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setItemToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar cita"
+        message={`¿Estás seguro de que quieres eliminar la cita de ${itemToDelete?.client} para el servicio "${itemToDelete?.service}"? Esta acción no se puede deshacer.`}
+      />
     </div>
   );
 }

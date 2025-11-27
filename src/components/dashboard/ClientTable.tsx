@@ -36,15 +36,13 @@ export default function ClientTable({ clients, onEdit, onDelete, searchTerm = ''
     });
 
     const handleDelete = async (clientId: string) => {
-        if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
-            setDeletingId(clientId);
-            try {
-                await onDelete(clientId);
-            } catch (error) {
-                console.error('Error al eliminar cliente:', error);
-            } finally {
-                setDeletingId(null);
-            }
+        setDeletingId(clientId);
+        try {
+            await onDelete(clientId);
+        } catch (error) {
+            console.error('Error al eliminar cliente:', error);
+        } finally {
+            setDeletingId(null);
         }
     };
 

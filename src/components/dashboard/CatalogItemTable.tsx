@@ -21,11 +21,13 @@ import { useRouter } from "next/navigation";
 interface CatalogItemTableProps {
   items: CatalogItem[];
   onEdit: (item: CatalogItem) => void;
+  onDelete: (itemId: string) => void;
 }
 
 export default function CatalogItemTable({
   items,
   onEdit,
+  onDelete,
 }: CatalogItemTableProps) {
   const { user } = useAuth();
   const router = useRouter();
@@ -43,16 +45,7 @@ export default function CatalogItemTable({
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (!user) return;
-    if (window.confirm("¿Estás seguro de que deseas eliminar este ítem?")) {
-      try {
-        await deleteCatalogItem(user.uid, id);
-        toast.success("Ítem eliminado exitosamente");
-      } catch (error) {
-        console.error("Error deleting catalog item:", error);
-        toast.error("Error al eliminar el ítem");
-      }
-    }
+    onDelete(id);
   };
 
   const filteredItems = items.filter((item) => {
