@@ -60,6 +60,17 @@ export interface Client {
   updatedAt: number;
 }
 
+export interface Collaborator {
+  id: string;
+  userId: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  notes?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // Tipos de ítems en el catálogo
 export type CatalogItemType = "storable" | "digital" | "service";
 

@@ -24,9 +24,12 @@ import {
 } from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToCatalog } from "@/services/catalog";
+import { subscribeToCollaborators } from "@/services/collaborator";
 import { useAuth } from "@/components/providers/AuthProvider";
+import type { Collaborator } from "@/types";
 import ClientForm from "./ClientForm";
 import CatalogItemForm from "./CatalogItemForm";
+import CollaboratorForm from "./CollaboratorForm";
 import TimePicker from "./TimePicker";
 import { toast } from "sonner";
 import Link from "next/link";
@@ -90,15 +93,19 @@ export default function AgendaForm({
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
+  const [savedCollaborators, setSavedCollaborators] = useState<Collaborator[]>([]);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedService, setSelectedService] = useState<CatalogItem | null>(
     null
   );
   const [clientQuery, setClientQuery] = useState("");
   const [serviceQuery, setServiceQuery] = useState("");
+  const [collaboratorQuery, setCollaboratorQuery] = useState("");
   const [isClientFormOpen, setIsClientFormOpen] = useState(false);
   const [isServiceFormOpen, setIsServiceFormOpen] = useState(false);
+  const [isCollaboratorFormOpen, setIsCollaboratorFormOpen] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
+  const [showCollaboratorPicker, setShowCollaboratorPicker] = useState(false);
 
   // Common time slots
   const timeOptions = [
@@ -227,7 +234,7 @@ export default function AgendaForm({
     quotedAmount - totalCollaboratorPayments
   );
 
-  // Subscribe to clients and services
+  // Subscribe to clients, services, and collaborators
   useEffect(() => {
     if (!user) return;
 
@@ -242,9 +249,17 @@ export default function AgendaForm({
       setCatalogItems(updatedItems);
     });
 
+    const unsubscribeCollaborators = subscribeToCollaborators(
+      user.uid,
+      (updatedCollaborators) => {
+        setSavedCollaborators(updatedCollaborators);
+      }
+    );
+
     return () => {
       unsubscribeClients();
       unsubscribeServices();
+      unsubscribeCollaborators();
     };
   }, [user]);
 
@@ -479,10 +494,56 @@ export default function AgendaForm({
   };
 
   const addCollaborator = () => {
+    setShowCollaboratorPicker(true);
+  };
+
+  const addCollaboratorFromList = (collaborator: Collaborator) => {
+    setCollaborators([
+      ...collaborators,
+      {
+        name: collaborator.name,
+        amount: "",
+        paymentType: "payment",
+      },
+    ]);
+    setShowCollaboratorPicker(false);
+    setCollaboratorQuery("");
+    toast.success(`${collaborator.name} agregado`);
+  };
+
+  const addManualCollaborator = () => {
     setCollaborators([
       ...collaborators,
       { name: "", amount: "", paymentType: "payment" },
     ]);
+    setShowCollaboratorPicker(false);
+  };
+
+  const handleCreateCollaborator = async (
+    collaboratorData: Omit<Collaborator, "id" | "userId" | "createdAt" | "updatedAt">
+  ) => {
+    if (!user) return;
+
+    try {
+      const { createCollaborator } = await import("@/services/collaborator");
+      await createCollaborator(user.uid, collaboratorData);
+      
+      // Agregar automáticamente el colaborador recién creado a la cita
+      setCollaborators([
+        ...collaborators,
+        {
+          name: collaboratorData.name,
+          amount: "",
+          paymentType: "payment",
+        },
+      ]);
+      
+      toast.success(`${collaboratorData.name} creado y agregado`);
+      setIsCollaboratorFormOpen(false);
+    } catch (error) {
+      console.error("Error al crear colaborador:", error);
+      toast.error("Error al crear colaborador");
+    }
   };
 
   const removeCollaborator = (index: number) => {
@@ -1254,6 +1315,89 @@ export default function AgendaForm({
                                   </button>
                                 </div>
 
+                                {/* Collaborator Picker Modal */}
+                                {showCollaboratorPicker && (
+                                  <div className="absolute inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                    <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden">
+                                      <div className="p-4 border-b border-gray-200">
+                                        <h3 className="text-lg font-semibold text-gray-900 mb-3">
+                                          Agregar Colaborador
+                                        </h3>
+                                        <input
+                                          type="text"
+                                          placeholder="Buscar colaborador..."
+                                          value={collaboratorQuery}
+                                          onChange={(e) => setCollaboratorQuery(e.target.value)}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                                        />
+                                      </div>
+                                      <div className="max-h-[400px] overflow-y-auto">
+                                        {savedCollaborators
+                                          .filter((c) =>
+                                            c.name.toLowerCase().includes(collaboratorQuery.toLowerCase())
+                                          )
+                                          .map((collaborator) => (
+                                            <button
+                                              key={collaborator.id}
+                                              type="button"
+                                              onClick={() => addCollaboratorFromList(collaborator)}
+                                              className="w-full p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left"
+                                            >
+                                              <div className="flex items-center justify-between">
+                                                <div>
+                                                  <p className="font-medium text-gray-900">{collaborator.name}</p>
+                                                  {(collaborator.email || collaborator.phone) && (
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                      {collaborator.email || collaborator.phone}
+                                                    </p>
+                                                  )}
+                                                </div>
+                                                <Plus className="h-5 w-5 text-blue-600" />
+                                              </div>
+                                            </button>
+                                          ))}
+                                        {savedCollaborators.length === 0 && (
+                                          <div className="p-8 text-center text-gray-500">
+                                            <p className="mb-2">No hay colaboradores guardados</p>
+                                            <Link href="/collaborators" className="text-blue-600 hover:text-blue-700 text-sm">
+                                              Crear colaboradores
+                                            </Link>
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div className="p-4 border-t border-gray-200 bg-gray-50 space-y-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setShowCollaboratorPicker(false);
+                                            setIsCollaboratorFormOpen(true);
+                                          }}
+                                          className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                                        >
+                                          Crear Colaborador
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={addManualCollaborator}
+                                          className="w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                        >
+                                          Agregar colaborador manualmente
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setShowCollaboratorPicker(false);
+                                            setCollaboratorQuery("");
+                                          }}
+                                          className="w-full px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors"
+                                        >
+                                          Cancelar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+
                                 {collaborators.length === 0 ? (
                                   <div className="text-center py-8 px-5 bg-gray-50 rounded-b-lg border-2 border-dashed border-gray-300 m-5 mt-4">
                                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-white border border-gray-300 mb-3">
@@ -1432,6 +1576,12 @@ export default function AgendaForm({
         onClose={() => setIsServiceFormOpen(false)}
         onSuccess={handleCreateService}
         initialName={serviceQuery}
+      />
+
+      <CollaboratorForm
+        isOpen={isCollaboratorFormOpen}
+        onClose={() => setIsCollaboratorFormOpen(false)}
+        onSubmit={handleCreateCollaborator}
       />
     </>
   );

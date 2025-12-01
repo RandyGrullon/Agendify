@@ -31,6 +31,17 @@ service cloud.firestore {
                     && resource.data.userId == userId;
     }
 
+    // Collaborators
+    match /collaborators/{userId}/items/{collaboratorId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && request.resource.data.userId == userId;
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && resource.data.userId == userId;
+      allow delete: if request.auth != null && request.auth.uid == userId
+                    && resource.data.userId == userId;
+    }
+
     // Services
     match /services/{userId}/items/{serviceId} {
       allow read: if request.auth != null && request.auth.uid == userId;
