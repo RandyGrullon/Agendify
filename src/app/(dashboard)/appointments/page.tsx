@@ -131,7 +131,9 @@ export default function AppointmentsPage() {
     if (!user) return;
     try {
       // Check for time conflicts
-      const collaboratorNames = (data.collaborators || []).map((c: any) => c.name);
+      const collaboratorNames = (data.collaborators || []).map(
+        (c: any) => c.name
+      );
       const conflict = await checkTimeConflict(
         user.uid,
         data.date as string,
@@ -188,7 +190,11 @@ export default function AppointmentsPage() {
     try {
       // Check for time conflicts if date or time changed
       if (data.date || data.startTime || data.endTime || data.time) {
-        const collaboratorNames = (data.collaborators || editingItem.collaborators || []).map((c: any) => c.name);
+        const collaboratorNames = (
+          data.collaborators ||
+          editingItem.collaborators ||
+          []
+        ).map((c: any) => c.name);
         const conflict = await checkTimeConflict(
           user.uid,
           (data.date as string) || (editingItem.date as string),

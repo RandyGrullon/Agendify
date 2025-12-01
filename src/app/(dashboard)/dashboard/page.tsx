@@ -178,7 +178,9 @@ export default function DashboardPage() {
     if (!user) return;
     try {
       // Check for time conflicts
-      const collaboratorNames = (data.collaborators || []).map((c: any) => c.name);
+      const collaboratorNames = (data.collaborators || []).map(
+        (c: any) => c.name
+      );
       const conflict = await checkTimeConflict(
         user.uid,
         data.date as string,

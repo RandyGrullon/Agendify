@@ -163,12 +163,17 @@ export const checkTimeConflict = async (
     // Two time ranges overlap if: start1 < end2 AND start2 < end1
     if (newStart < itemEnd && itemStart < newEnd) {
       // Times overlap, but check if client or collaborators are different
-      const sameClient = clientId && item.clientId && clientId === item.clientId;
-      
+      const sameClient =
+        clientId && item.clientId && clientId === item.clientId;
+
       // Check if any collaborator is shared
-      const itemCollaboratorNames = (item.collaborators || []).map(c => c.name.toLowerCase());
-      const newCollaboratorNames = (collaboratorNames || []).map(n => n.toLowerCase());
-      const hasSharedCollaborator = itemCollaboratorNames.some(name => 
+      const itemCollaboratorNames = (item.collaborators || []).map((c) =>
+        c.name.toLowerCase()
+      );
+      const newCollaboratorNames = (collaboratorNames || []).map((n) =>
+        n.toLowerCase()
+      );
+      const hasSharedCollaborator = itemCollaboratorNames.some((name) =>
         newCollaboratorNames.includes(name)
       );
 
