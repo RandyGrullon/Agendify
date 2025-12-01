@@ -125,12 +125,15 @@ export const getAllAgendaItems = async (
 /**
  * Check if there's a time conflict with existing appointments
  * Returns the conflicting appointment if found, null otherwise
+ * Now allows multiple appointments at the same time if they have different clients or collaborators
  */
 export const checkTimeConflict = async (
   userId: string,
   date: string,
   startTime: string,
   endTime: string,
+  clientId?: string,
+  collaboratorNames?: string[],
   excludeItemId?: string
 ): Promise<AgendaItem | null> => {
   const allItems = await getAllAgendaItems(userId);
@@ -159,7 +162,21 @@ export const checkTimeConflict = async (
     // Check if times overlap
     // Two time ranges overlap if: start1 < end2 AND start2 < end1
     if (newStart < itemEnd && itemStart < newEnd) {
-      return item; // Conflict found
+      // Times overlap, but check if client or collaborators are different
+      const sameClient = clientId && item.clientId && clientId === item.clientId;
+      
+      // Check if any collaborator is shared
+      const itemCollaboratorNames = (item.collaborators || []).map(c => c.name.toLowerCase());
+      const newCollaboratorNames = (collaboratorNames || []).map(n => n.toLowerCase());
+      const hasSharedCollaborator = itemCollaboratorNames.some(name => 
+        newCollaboratorNames.includes(name)
+      );
+
+      // Only return conflict if same client OR shared collaborator
+      if (sameClient || hasSharedCollaborator) {
+        return item; // Conflict found
+      }
+      // If different client AND no shared collaborators, allow the overlap
     }
   }
 

@@ -178,18 +178,21 @@ export default function DashboardPage() {
     if (!user) return;
     try {
       // Check for time conflicts
+      const collaboratorNames = (data.collaborators || []).map((c: any) => c.name);
       const conflict = await checkTimeConflict(
         user.uid,
         data.date as string,
         data.startTime || data.time,
-        data.endTime || data.time
+        data.endTime || data.time,
+        data.clientId,
+        collaboratorNames
       );
 
       if (conflict) {
         toast.error(
           `Ya existe una cita a las ${
             conflict.startTime || conflict.time
-          } con ${conflict.client}`,
+          } con el mismo cliente o colaborador`,
           { duration: 4000 }
         );
         return;

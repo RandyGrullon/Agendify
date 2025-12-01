@@ -131,18 +131,21 @@ export default function AppointmentsPage() {
     if (!user) return;
     try {
       // Check for time conflicts
+      const collaboratorNames = (data.collaborators || []).map((c: any) => c.name);
       const conflict = await checkTimeConflict(
         user.uid,
         data.date as string,
         data.startTime || data.time,
-        data.endTime || data.time
+        data.endTime || data.time,
+        data.clientId,
+        collaboratorNames
       );
 
       if (conflict) {
         toast.error(
           `Ya existe una cita a las ${
             conflict.startTime || conflict.time
-          } con ${conflict.client}`,
+          } con el mismo cliente o colaborador`,
           { duration: 4000 }
         );
         return;
@@ -185,6 +188,7 @@ export default function AppointmentsPage() {
     try {
       // Check for time conflicts if date or time changed
       if (data.date || data.startTime || data.endTime || data.time) {
+        const collaboratorNames = (data.collaborators || editingItem.collaborators || []).map((c: any) => c.name);
         const conflict = await checkTimeConflict(
           user.uid,
           (data.date as string) || (editingItem.date as string),
@@ -193,6 +197,8 @@ export default function AppointmentsPage() {
             editingItem.startTime ||
             editingItem.time,
           data.endTime || editingItem.endTime || data.time || editingItem.time,
+          data.clientId || editingItem.clientId,
+          collaboratorNames,
           editingItem.id // Exclude current item from conflict check
         );
 
@@ -200,7 +206,7 @@ export default function AppointmentsPage() {
           toast.error(
             `Ya existe una cita a las ${
               conflict.startTime || conflict.time
-            } con ${conflict.client}`,
+            } con el mismo cliente o colaborador`,
             { duration: 4000 }
           );
           return;
