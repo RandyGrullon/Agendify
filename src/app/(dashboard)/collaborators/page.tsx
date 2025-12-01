@@ -173,7 +173,9 @@ export default function CollaboratorsPage() {
         onClose={() => setIsDeleteModalOpen(false)}
         onConfirm={handleDelete}
         title="Eliminar Colaborador"
-        message={`¿Estás seguro de que quieres eliminar a ${collaboratorToDelete?.name || 'este colaborador'}? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de que quieres eliminar a ${
+          collaboratorToDelete?.name || "este colaborador"
+        }? Esta acción no se puede deshacer.`}
         confirmText="Eliminar"
         cancelText="Cancelar"
       />

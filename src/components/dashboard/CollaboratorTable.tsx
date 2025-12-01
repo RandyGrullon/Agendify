@@ -158,7 +158,10 @@ export default function CollaboratorTable({
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredCollaborators.map((collaborator) => (
-              <tr key={collaborator.id} className="hover:bg-gray-50 transition-colors">
+              <tr
+                key={collaborator.id}
+                className="hover:bg-gray-50 transition-colors"
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -171,7 +174,12 @@ export default function CollaboratorTable({
                         {collaborator.name}
                       </div>
                       <div className="text-xs text-gray-500">
-                        Desde {format(new Date(collaborator.createdAt), "dd MMM yyyy", { locale: es })}
+                        Desde{" "}
+                        {format(
+                          new Date(collaborator.createdAt),
+                          "dd MMM yyyy",
+                          { locale: es }
+                        )}
                       </div>
                     </div>
                   </div>

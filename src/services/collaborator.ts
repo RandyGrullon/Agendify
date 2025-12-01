@@ -100,7 +100,10 @@ export const getCollaborator = async (
   const collaboratorSnap = await getDoc(collaboratorRef);
 
   if (collaboratorSnap.exists()) {
-    return { id: collaboratorSnap.id, ...collaboratorSnap.data() } as Collaborator;
+    return {
+      id: collaboratorSnap.id,
+      ...collaboratorSnap.data(),
+    } as Collaborator;
   } else {
     return null;
   }

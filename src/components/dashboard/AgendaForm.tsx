@@ -93,7 +93,9 @@ export default function AgendaForm({
   const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
-  const [savedCollaborators, setSavedCollaborators] = useState<Collaborator[]>([]);
+  const [savedCollaborators, setSavedCollaborators] = useState<Collaborator[]>(
+    []
+  );
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [selectedService, setSelectedService] = useState<CatalogItem | null>(
     null
@@ -520,14 +522,17 @@ export default function AgendaForm({
   };
 
   const handleCreateCollaborator = async (
-    collaboratorData: Omit<Collaborator, "id" | "userId" | "createdAt" | "updatedAt">
+    collaboratorData: Omit<
+      Collaborator,
+      "id" | "userId" | "createdAt" | "updatedAt"
+    >
   ) => {
     if (!user) return;
 
     try {
       const { createCollaborator } = await import("@/services/collaborator");
       await createCollaborator(user.uid, collaboratorData);
-      
+
       // Agregar automáticamente el colaborador recién creado a la cita
       setCollaborators([
         ...collaborators,
@@ -537,7 +542,7 @@ export default function AgendaForm({
           paymentType: "payment",
         },
       ]);
-      
+
       toast.success(`${collaboratorData.name} creado y agregado`);
       setIsCollaboratorFormOpen(false);
     } catch (error) {
@@ -1327,28 +1332,42 @@ export default function AgendaForm({
                                           type="text"
                                           placeholder="Buscar colaborador..."
                                           value={collaboratorQuery}
-                                          onChange={(e) => setCollaboratorQuery(e.target.value)}
+                                          onChange={(e) =>
+                                            setCollaboratorQuery(e.target.value)
+                                          }
                                           className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
                                         />
                                       </div>
                                       <div className="max-h-[400px] overflow-y-auto">
                                         {savedCollaborators
                                           .filter((c) =>
-                                            c.name.toLowerCase().includes(collaboratorQuery.toLowerCase())
+                                            c.name
+                                              .toLowerCase()
+                                              .includes(
+                                                collaboratorQuery.toLowerCase()
+                                              )
                                           )
                                           .map((collaborator) => (
                                             <button
                                               key={collaborator.id}
                                               type="button"
-                                              onClick={() => addCollaboratorFromList(collaborator)}
+                                              onClick={() =>
+                                                addCollaboratorFromList(
+                                                  collaborator
+                                                )
+                                              }
                                               className="w-full p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors text-left"
                                             >
                                               <div className="flex items-center justify-between">
                                                 <div>
-                                                  <p className="font-medium text-gray-900">{collaborator.name}</p>
-                                                  {(collaborator.email || collaborator.phone) && (
+                                                  <p className="font-medium text-gray-900">
+                                                    {collaborator.name}
+                                                  </p>
+                                                  {(collaborator.email ||
+                                                    collaborator.phone) && (
                                                     <p className="text-xs text-gray-500 mt-1">
-                                                      {collaborator.email || collaborator.phone}
+                                                      {collaborator.email ||
+                                                        collaborator.phone}
                                                     </p>
                                                   )}
                                                 </div>
@@ -1358,8 +1377,13 @@ export default function AgendaForm({
                                           ))}
                                         {savedCollaborators.length === 0 && (
                                           <div className="p-8 text-center text-gray-500">
-                                            <p className="mb-2">No hay colaboradores guardados</p>
-                                            <Link href="/collaborators" className="text-blue-600 hover:text-blue-700 text-sm">
+                                            <p className="mb-2">
+                                              No hay colaboradores guardados
+                                            </p>
+                                            <Link
+                                              href="/collaborators"
+                                              className="text-blue-600 hover:text-blue-700 text-sm"
+                                            >
                                               Crear colaboradores
                                             </Link>
                                           </div>
