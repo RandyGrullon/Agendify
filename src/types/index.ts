@@ -1,14 +1,17 @@
 export interface CollaboratorPayment {
   name: string;
   amount: number;
-  paymentType?: 'payment' | 'charge'; // payment = monto fijo a pagar, charge = monto fijo a cobrar
+  paymentType?: "payment" | "charge"; // payment = monto fijo a pagar, charge = monto fijo a cobrar
 }
 
 export interface AgendaItem {
   id: string;
   userId: string;
   date: string | number; // YYYY-MM-DD string or Excel serial number
-  time: string;
+  time: string; // Start time (kept for backward compatibility)
+  startTime?: string; // New: explicit start time
+  endTime?: string; // New: end time (calculated or manual)
+  duration?: number; // Duration in minutes (calculated from startTime and endTime)
   client: string; // Client Name (kept for backward compatibility and display)
   clientId?: string; // Link to Client document
   collaborator?: string; // Deprecated: kept for backward compatibility
@@ -24,8 +27,16 @@ export interface AgendaItem {
   bank?: string;
   collaboratorPayment: number; // Deprecated: kept for backward compatibility
   comments?: string;
+  reminders?: ReminderConfig[]; // Reminder notifications
   createdAt: number;
   updatedAt: number;
+}
+
+export interface ReminderConfig {
+  id: string;
+  type: "days" | "hours" | "minutes";
+  value: number; // e.g., 1 day before, 2 hours before
+  enabled: boolean;
 }
 
 export interface UserProfile {

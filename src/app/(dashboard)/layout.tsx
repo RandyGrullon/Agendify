@@ -6,6 +6,7 @@ import Topbar from "@/components/dashboard/Topbar";
 import PINLockScreen from "@/components/dashboard/PINLockScreen";
 import OnboardingTutorial from "@/components/dashboard/OnboardingTutorial";
 import PWAInstallPrompt from "@/components/dashboard/PWAInstallPrompt";
+import ReminderChecker from "@/components/dashboard/ReminderChecker";
 
 export default function DashboardLayout({
   children,
@@ -121,6 +122,9 @@ export default function DashboardLayout({
 
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
+
+      {/* Reminder Notification Checker */}
+      <ReminderChecker />
     </div>
   );
 }

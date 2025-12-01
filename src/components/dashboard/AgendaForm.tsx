@@ -5,7 +5,13 @@ import { Dialog, Transition, Combobox, Tab } from "@headlessui/react";
 import { useForm, Controller, Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { AgendaItem, Client, CatalogItem, CollaboratorPayment } from "@/types";
+import {
+  AgendaItem,
+  Client,
+  CatalogItem,
+  CollaboratorPayment,
+  ReminderConfig,
+} from "@/types";
 import {
   X,
   Check,
@@ -14,24 +20,35 @@ import {
   Plus,
   Trash2,
   Clock,
+  Bell,
 } from "lucide-react";
 import { subscribeToClients, createClient } from "@/services/client";
 import { subscribeToCatalog } from "@/services/catalog";
 import { useAuth } from "@/components/providers/AuthProvider";
 import ClientForm from "./ClientForm";
 import CatalogItemForm from "./CatalogItemForm";
+import TimePicker from "./TimePicker";
 import { toast } from "sonner";
 import Link from "next/link";
 
 const schema = z.object({
   date: z.string().min(1, "Fecha requerida"),
-  time: z
+  time: z.string().optional(), // Deprecated, kept for backward compatibility
+  startTime: z
     .string()
-    .min(1, "Hora requerida")
+    .min(1, "Hora de inicio requerida")
     .regex(
       /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
       "Formato de hora inválido (HH:MM)"
     ),
+  endTime: z
+    .string()
+    .min(1, "Hora final requerida")
+    .regex(
+      /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/,
+      "Formato de hora inválido (HH:MM)"
+    ),
+  duration: z.coerce.number().optional(),
   client: z.string().min(1, "Cliente requerido"),
   location: z.string().optional(),
   peopleCount: z.coerce
@@ -120,6 +137,10 @@ export default function AgendaForm({
     (Omit<CollaboratorPayment, "amount"> & { amount: number | string })[]
   >([]);
 
+  const [reminders, setReminders] = useState<ReminderConfig[]>([
+    { id: "1", type: "days", value: 1, enabled: true },
+  ]);
+
   const clientButtonRef = useRef<HTMLButtonElement>(null);
   const serviceButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -139,7 +160,9 @@ export default function AgendaForm({
       quotedAmount: undefined,
       deposit: undefined,
       date: new Date().toISOString().split("T")[0],
-      time: "09:00",
+      startTime: "09:00",
+      endTime: "10:00",
+      time: "09:00", // backward compatibility
       client: "",
       service: "",
     },
@@ -148,6 +171,44 @@ export default function AgendaForm({
   const quotedAmount = watch("quotedAmount") || 0;
   const deposit = watch("deposit") || 0;
   const balance = Math.max(0, quotedAmount - deposit);
+  const watchedStartTime = watch("startTime");
+  const watchedEndTime = watch("endTime");
+
+  // Calculate duration in minutes based on start and end time
+  const calculateDuration = (startTime: string, endTime: string): number => {
+    if (!startTime || !endTime) return 0;
+    try {
+      const [startHours, startMinutes] = startTime.split(":").map(Number);
+      const [endHours, endMinutes] = endTime.split(":").map(Number);
+
+      const start = new Date();
+      start.setHours(startHours, startMinutes, 0, 0);
+
+      const end = new Date();
+      end.setHours(endHours, endMinutes, 0, 0);
+
+      const diffMs = end.getTime() - start.getTime();
+      return Math.max(0, Math.round(diffMs / 60000)); // Convert to minutes
+    } catch {
+      return 0;
+    }
+  };
+
+  // Calculate duration whenever start or end time changes
+  const calculatedDuration = calculateDuration(
+    watchedStartTime || "",
+    watchedEndTime || ""
+  );
+
+  // Update duration field and time (for backward compatibility)
+  useEffect(() => {
+    if (watchedStartTime) {
+      setValue("time", watchedStartTime);
+    }
+    if (calculatedDuration > 0) {
+      setValue("duration", calculatedDuration);
+    }
+  }, [watchedStartTime, calculatedDuration, setValue]);
 
   // Calculate total collaborator payments and charges
   const totalCollaboratorPayments = collaborators.reduce((sum, c) => {
@@ -165,21 +226,6 @@ export default function AgendaForm({
     0,
     quotedAmount - totalCollaboratorPayments
   );
-
-  // Close time picker when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        isTimePickerOpen &&
-        !(event.target as Element).closest(".time-picker-container")
-      ) {
-        setIsTimePickerOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isTimePickerOpen]);
 
   // Subscribe to clients and services
   useEffect(() => {
@@ -252,6 +298,35 @@ export default function AgendaForm({
         } else {
           setCollaborators([]);
         }
+
+        // Load reminders if available
+        if (initialData.reminders && initialData.reminders.length > 0) {
+          setReminders(initialData.reminders);
+        } else {
+          setReminders([{ id: "1", type: "days", value: 1, enabled: true }]);
+        }
+
+        // Set startTime and endTime from initialData, or fallback to time field
+        if (initialData.startTime) {
+          setValue("startTime", initialData.startTime);
+        } else if (initialData.time) {
+          setValue("startTime", initialData.time);
+        }
+
+        if (initialData.endTime) {
+          setValue("endTime", initialData.endTime);
+        } else if (initialData.time && initialData.duration) {
+          // Calculate endTime from time and duration for backward compatibility
+          const [hours, minutes] = initialData.time.split(":").map(Number);
+          const start = new Date();
+          start.setHours(hours, minutes, 0, 0);
+          const end = new Date(start.getTime() + initialData.duration * 60000);
+          const endTimeStr = `${String(end.getHours()).padStart(
+            2,
+            "0"
+          )}:${String(end.getMinutes()).padStart(2, "0")}`;
+          setValue("endTime", endTimeStr);
+        }
       } else {
         // Only reset if we are opening a fresh form, NOT if we are just receiving updates
         // Calculate today's date fresh each time to ensure it's always current
@@ -263,12 +338,16 @@ export default function AgendaForm({
           deposit: undefined,
           date: today,
           time: "09:00",
+          startTime: "09:00",
+          endTime: "10:00",
+          duration: undefined,
           client: "",
           service: "",
         });
         setSelectedClient(null);
         setSelectedService(null);
         setCollaborators([]);
+        setReminders([{ id: "1", type: "days", value: 1, enabled: true }]);
       }
     }
   }, [initialData, reset, setValue, isOpen]); // Removed clients and services from dependencies to prevent reset on list update
@@ -358,6 +437,19 @@ export default function AgendaForm({
     setSelectedService(service);
     setValue("service", service.name);
     setValue("quotedAmount", service.price);
+    if (service.duration) {
+      // Calculate endTime based on startTime and service duration
+      const currentStartTime = watchedStartTime || "09:00";
+      const [hours, minutes] = currentStartTime.split(":").map(Number);
+      const start = new Date();
+      start.setHours(hours, minutes, 0, 0);
+      const end = new Date(start.getTime() + service.duration * 60000);
+      const endTimeStr = `${String(end.getHours()).padStart(2, "0")}:${String(
+        end.getMinutes()
+      ).padStart(2, "0")}`;
+      setValue("endTime", endTimeStr);
+      setValue("duration", service.duration);
+    }
     setIsServiceFormOpen(false);
     toast.success("Ítem creado y seleccionado");
   };
@@ -371,8 +463,10 @@ export default function AgendaForm({
 
     const enhancedData = {
       ...data,
+      time: data.startTime, // Use startTime as time for backward compatibility
       myProfit: calculatedProfit,
       collaborators: finalCollaborators,
+      reminders: reminders.filter((r) => r.enabled),
       // Keep backward compatibility
       collaborator:
         finalCollaborators.length > 0 ? finalCollaborators[0].name : "",
@@ -493,7 +587,8 @@ export default function AgendaForm({
                           <Tab.Panels>
                             {/* Tab 1: Información de la Cita */}
                             <Tab.Panel className="grid grid-cols-1 gap-y-5 gap-x-4 sm:grid-cols-4">
-                              <div className="sm:col-span-2">
+                              {/* Fecha, Hora Inicio, Hora Final y Duración en la misma línea */}
+                              <div className="sm:col-span-1">
                                 <label className="block text-sm font-semibold text-gray-900 mb-1">
                                   Fecha <span className="text-red-500">*</span>
                                 </label>
@@ -508,69 +603,53 @@ export default function AgendaForm({
                                   </p>
                                 )}
                               </div>
-                              <div className="sm:col-span-2">
-                                <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                  Hora <span className="text-red-500">*</span>
-                                </label>
+
+                              <div className="sm:col-span-1">
                                 <Controller
-                                  name="time"
+                                  name="startTime"
                                   control={control}
                                   render={({ field }) => (
-                                    <div className="relative time-picker-container">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          setIsTimePickerOpen(!isTimePickerOpen)
-                                        }
-                                        className="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
-                                      >
-                                        <span className="flex items-center text-gray-900">
-                                          <Clock className="h-4 w-4 text-gray-400 mr-2" />
-                                          {field.value || "Seleccionar hora"}
-                                        </span>
-                                        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                                          <ChevronsUpDown className="h-4 w-4 text-gray-400" />
-                                        </span>
-                                      </button>
-
-                                      {isTimePickerOpen && (
-                                        <div className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                                          <div className="grid grid-cols-4 gap-1 p-2">
-                                            {timeOptions.map((time) => (
-                                              <button
-                                                key={time}
-                                                type="button"
-                                                onClick={() => {
-                                                  field.onChange(time);
-                                                  setIsTimePickerOpen(false);
-                                                }}
-                                                className="rounded px-2 py-1 text-sm text-gray-900 hover:bg-blue-100 hover:text-blue-900 focus:bg-blue-100 focus:text-blue-900"
-                                              >
-                                                {time}
-                                              </button>
-                                            ))}
-                                          </div>
-                                          <div className="border-t border-gray-200 p-2">
-                                            <input
-                                              type="time"
-                                              value={field.value || ""}
-                                              onChange={(e) =>
-                                                field.onChange(e.target.value)
-                                              }
-                                              className="w-full rounded border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:outline-none"
-                                              placeholder="HH:MM"
-                                            />
-                                          </div>
-                                        </div>
-                                      )}
-                                    </div>
+                                    <TimePicker
+                                      value={field.value || ""}
+                                      onChange={field.onChange}
+                                      label="Hora Inicio"
+                                      error={errors.startTime?.message}
+                                      required
+                                    />
                                   )}
                                 />
-                                {errors.time && (
-                                  <p className="text-red-500 text-xs mt-1">
-                                    {errors.time.message}
-                                  </p>
-                                )}
+                              </div>
+
+                              <div className="sm:col-span-1">
+                                <Controller
+                                  name="endTime"
+                                  control={control}
+                                  render={({ field }) => (
+                                    <TimePicker
+                                      value={field.value || ""}
+                                      onChange={field.onChange}
+                                      label="Hora Final"
+                                      error={errors.endTime?.message}
+                                      required
+                                    />
+                                  )}
+                                />
+                              </div>
+
+                              <div className="sm:col-span-1">
+                                <label className="block text-sm font-semibold text-gray-900 mb-1">
+                                  Duración
+                                </label>
+                                <div className="mt-1 flex items-center h-[42px] px-3 rounded-md bg-blue-50 border border-blue-200">
+                                  <Clock className="h-4 w-4 text-blue-600 mr-2" />
+                                  <span className="text-sm font-semibold text-blue-900">
+                                    {calculatedDuration > 0
+                                      ? `${Math.floor(
+                                          calculatedDuration / 60
+                                        )}h ${calculatedDuration % 60}m`
+                                      : "-"}
+                                  </span>
+                                </div>
                               </div>
 
                               {/* Cliente y Personas en la misma línea */}
@@ -749,6 +828,31 @@ export default function AgendaForm({
                                       onChange={(service) => {
                                         setSelectedService(service);
                                         field.onChange(service?.name || "");
+                                        if (service?.duration) {
+                                          // Calculate endTime based on startTime and service duration
+                                          const currentStartTime =
+                                            watchedStartTime || "09:00";
+                                          const [hours, minutes] =
+                                            currentStartTime
+                                              .split(":")
+                                              .map(Number);
+                                          const start = new Date();
+                                          start.setHours(hours, minutes, 0, 0);
+                                          const end = new Date(
+                                            start.getTime() +
+                                              service.duration * 60000
+                                          );
+                                          const endTimeStr = `${String(
+                                            end.getHours()
+                                          ).padStart(2, "0")}:${String(
+                                            end.getMinutes()
+                                          ).padStart(2, "0")}`;
+                                          setValue("endTime", endTimeStr);
+                                          setValue(
+                                            "duration",
+                                            service.duration
+                                          );
+                                        }
                                       }}
                                     >
                                       {({ open }) => (
@@ -927,6 +1031,103 @@ export default function AgendaForm({
                                     {errors.comments.message}
                                   </p>
                                 )}
+                              </div>
+
+                              {/* Reminders Section */}
+                              <div className="sm:col-span-4">
+                                <div className="border-t border-gray-200 pt-5">
+                                  <label className="block text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                    <Bell size={16} className="text-blue-600" />
+                                    Recordatorios
+                                  </label>
+                                  <div className="space-y-3">
+                                    {reminders.map((reminder, index) => (
+                                      <div
+                                        key={reminder.id}
+                                        className="flex items-center gap-3 bg-gray-50 p-3 rounded-lg"
+                                      >
+                                        <input
+                                          type="checkbox"
+                                          checked={reminder.enabled}
+                                          onChange={(e) => {
+                                            const updated = [...reminders];
+                                            updated[index].enabled =
+                                              e.target.checked;
+                                            setReminders(updated);
+                                          }}
+                                          className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        />
+                                        <input
+                                          type="number"
+                                          min="1"
+                                          value={reminder.value}
+                                          onChange={(e) => {
+                                            const updated = [...reminders];
+                                            updated[index].value = Number(
+                                              e.target.value
+                                            );
+                                            setReminders(updated);
+                                          }}
+                                          className="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2 text-gray-900"
+                                        />
+                                        <select
+                                          value={reminder.type}
+                                          onChange={(e) => {
+                                            const updated = [...reminders];
+                                            updated[index].type = e.target
+                                              .value as
+                                              | "days"
+                                              | "hours"
+                                              | "minutes";
+                                            setReminders(updated);
+                                          }}
+                                          className="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm border p-2 text-gray-900"
+                                        >
+                                          <option value="days">
+                                            Días antes
+                                          </option>
+                                          <option value="hours">
+                                            Horas antes
+                                          </option>
+                                          <option value="minutes">
+                                            Minutos antes
+                                          </option>
+                                        </select>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setReminders(
+                                              reminders.filter(
+                                                (_, i) => i !== index
+                                              )
+                                            );
+                                          }}
+                                          className="ml-auto p-1 text-red-600 hover:text-red-700 hover:bg-red-50 rounded"
+                                        >
+                                          <Trash2 size={16} />
+                                        </button>
+                                      </div>
+                                    ))}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setReminders([
+                                          ...reminders,
+                                          {
+                                            id: Date.now().toString(),
+                                            type: "hours",
+                                            value: 2,
+                                            enabled: true,
+                                          },
+                                        ]);
+                                      }}
+                                      className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                                    >
+                                      <Plus size={16} />
+                                      Agregar recordatorio
+                                    </button>
+                                  </div>
+                                </div>
                               </div>
                             </Tab.Panel>
 

@@ -210,9 +210,8 @@ export default function CalendarView({
       <div className="flex flex-col h-full px-1 py-0.5 overflow-hidden">
         <div className="flex items-center justify-between gap-1">
           <span
-            className={`truncate flex-1 font-medium ${
-              isWeekOrDay ? "text-xs" : "text-[10px]"
-            }`}
+            className={`truncate flex-1 font-medium ${isWeekOrDay ? "text-xs" : "text-[10px]"
+              }`}
           >
             {isMobile ? item.client : event.title}
           </span>
@@ -291,11 +290,10 @@ export default function CalendarView({
               <button
                 key={v}
                 onClick={() => toolbar.onView(v)}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
-                  toolbar.view === v
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${toolbar.view === v
                     ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
                     : "bg-white text-gray-700 hover:bg-blue-50 hover:text-blue-600 border border-gray-200 hover:border-blue-300"
-                }`}
+                  }`}
               >
                 {label}
               </button>

@@ -8,6 +8,7 @@ import {
   addAgendaItem,
   updateAgendaItem,
   deleteAgendaItem,
+  checkTimeConflict,
 } from "@/services/agenda";
 import { getBusinessSettings } from "@/services/settings";
 import { AgendaItem } from "@/types";
@@ -107,6 +108,20 @@ export default function AppointmentsPage() {
       });
     }
 
+    // Sort by date descending, then by time ascending
+    filtered.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      // Sort by date descending (most recent first)
+      if (dateA !== dateB) {
+        return dateB - dateA;
+      }
+      // For same date, sort by time ascending (earliest first)
+      const timeA = a.startTime || a.time;
+      const timeB = b.startTime || b.time;
+      return timeA.localeCompare(timeB);
+    });
+
     return filtered;
   }, [filters, items]);
 
@@ -115,6 +130,24 @@ export default function AppointmentsPage() {
   ) => {
     if (!user) return;
     try {
+      // Check for time conflicts
+      const conflict = await checkTimeConflict(
+        user.uid,
+        data.date as string,
+        data.startTime || data.time,
+        data.endTime || data.time
+      );
+
+      if (conflict) {
+        toast.error(
+          `Ya existe una cita a las ${
+            conflict.startTime || conflict.time
+          } con ${conflict.client}`,
+          { duration: 4000 }
+        );
+        return;
+      }
+
       await addAgendaItem(user.uid, data);
       setIsFormOpen(false);
       toast.success("Cita creada exitosamente");
@@ -150,6 +183,30 @@ export default function AppointmentsPage() {
   const handleUpdate = async (data: Partial<AgendaItem>) => {
     if (!user || !editingItem) return;
     try {
+      // Check for time conflicts if date or time changed
+      if (data.date || data.startTime || data.endTime || data.time) {
+        const conflict = await checkTimeConflict(
+          user.uid,
+          (data.date as string) || (editingItem.date as string),
+          data.startTime ||
+            data.time ||
+            editingItem.startTime ||
+            editingItem.time,
+          data.endTime || editingItem.endTime || data.time || editingItem.time,
+          editingItem.id // Exclude current item from conflict check
+        );
+
+        if (conflict) {
+          toast.error(
+            `Ya existe una cita a las ${
+              conflict.startTime || conflict.time
+            } con ${conflict.client}`,
+            { duration: 4000 }
+          );
+          return;
+        }
+      }
+
       await updateAgendaItem(user.uid, editingItem.id, data);
       setIsFormOpen(false);
       setEditingItem(null);

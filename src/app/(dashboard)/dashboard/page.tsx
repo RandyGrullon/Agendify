@@ -7,6 +7,7 @@ import {
   addAgendaItem,
   updateAgendaItem,
   deleteAgendaItem,
+  checkTimeConflict,
 } from "@/services/agenda";
 import { getBusinessSettings } from "@/services/settings";
 
@@ -73,11 +74,18 @@ export default function DashboardPage() {
     if (user) {
       const unsubscribe = subscribeToAgenda(user.uid, (data) => {
         setItems(data);
-        // Sort by date descending for the list
+        // Sort by date ascending (próximas primero) and time ascending (earliest first)
         const sorted = [...data].sort((a, b) => {
           const dateA = new Date(a.date).getTime();
           const dateB = new Date(b.date).getTime();
-          return dateB - dateA;
+          // Sort by date ascending (closest dates first)
+          if (dateA !== dateB) {
+            return dateA - dateB;
+          }
+          // For same date, sort by time ascending (earliest first)
+          const timeA = a.startTime || a.time;
+          const timeB = b.startTime || b.time;
+          return timeA.localeCompare(timeB);
         });
         setFilteredItems(sorted);
       });
@@ -113,7 +121,7 @@ export default function DashboardPage() {
     };
   }, [items]);
 
-  // Get today's and this week's appointments
+  // Get today's and this week's appointments (sorted by time ascending)
   const { todayAppointments, weekAppointments } = useMemo(() => {
     const now = new Date();
     const todayStart = startOfDay(now);
@@ -128,7 +136,12 @@ export default function DashboardPage() {
             : parseISO(item.date.toString());
         return isSameDay(itemDate, todayStart);
       })
-      .sort((a, b) => a.time.localeCompare(b.time));
+      .sort((a, b) => {
+        // Sort by time ascending (earliest first)
+        const timeA = a.startTime || a.time;
+        const timeB = b.startTime || b.time;
+        return timeA.localeCompare(timeB);
+      });
 
     const week = items
       .filter((item) => {
@@ -147,9 +160,13 @@ export default function DashboardPage() {
           typeof b.date === "number"
             ? new Date((b.date - 25569) * 86400 * 1000)
             : parseISO(b.date.toString());
+        // First sort by date ascending
         if (dateA.getTime() !== dateB.getTime())
           return dateA.getTime() - dateB.getTime();
-        return a.time.localeCompare(b.time);
+        // Then by time ascending (earliest first)
+        const timeA = a.startTime || a.time;
+        const timeB = b.startTime || b.time;
+        return timeA.localeCompare(timeB);
       });
 
     return { todayAppointments: today, weekAppointments: week };
@@ -160,6 +177,24 @@ export default function DashboardPage() {
   ) => {
     if (!user) return;
     try {
+      // Check for time conflicts
+      const conflict = await checkTimeConflict(
+        user.uid,
+        data.date as string,
+        data.startTime || data.time,
+        data.endTime || data.time
+      );
+
+      if (conflict) {
+        toast.error(
+          `Ya existe una cita a las ${
+            conflict.startTime || conflict.time
+          } con ${conflict.client}`,
+          { duration: 4000 }
+        );
+        return;
+      }
+
       await addAgendaItem(user.uid, data);
       setIsFormOpen(false);
       toast.success("Cita creada");
@@ -404,9 +439,18 @@ export default function DashboardPage() {
                             <p className="text-sm text-gray-600 truncate">
                               {item.service}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              🕐 {formatTime(item.time)}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <p className="text-xs text-gray-500">
+                                🕐 {formatTime(item.startTime || item.time)}
+                                {item.endTime &&
+                                  ` - ${formatTime(item.endTime)}`}
+                              </p>
+                              {item.duration && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {item.duration} min
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-4 pl-11 sm:pl-0">
@@ -478,14 +522,26 @@ export default function DashboardPage() {
                             <p className="text-sm text-gray-600 truncate">
                               {item.service}
                             </p>
-                            <p className="text-xs text-gray-500 mt-0.5">
-                              {new Date(item.date).toLocaleDateString("es-MX", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                              })}{" "}
-                              • {formatTime(item.time)}
-                            </p>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <p className="text-xs text-gray-500">
+                                {new Date(item.date).toLocaleDateString(
+                                  "es-MX",
+                                  {
+                                    weekday: "short",
+                                    month: "short",
+                                    day: "numeric",
+                                  }
+                                )}{" "}
+                                • {formatTime(item.startTime || item.time)}
+                                {item.endTime &&
+                                  ` - ${formatTime(item.endTime)}`}
+                              </p>
+                              {item.duration && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                  {item.duration} min
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 

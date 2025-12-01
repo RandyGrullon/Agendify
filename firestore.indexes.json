@@ -1,19 +1,37 @@
 {
-    "indexes": [
+  "indexes": [
+    {
+      "collectionGroup": "items",
+      "queryScope": "COLLECTION",
+      "fields": [
         {
-            "collectionGroup": "items",
-            "queryScope": "COLLECTION",
-            "fields": [
-                {
-                    "fieldPath": "date",
-                    "order": "DESCENDING"
-                },
-                {
-                    "fieldPath": "time",
-                    "order": "ASCENDING"
-                }
-            ]
+          "fieldPath": "date",
+          "order": "DESCENDING"
+        },
+        {
+          "fieldPath": "time",
+          "order": "ASCENDING"
         }
-    ],
-    "fieldOverrides": []
+      ]
+    },
+    {
+      "collectionGroup": "reminders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "sent",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "reminderTime",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
 }

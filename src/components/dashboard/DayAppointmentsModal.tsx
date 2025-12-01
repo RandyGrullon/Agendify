@@ -154,29 +154,50 @@ export default function DayAppointmentsModal({
                           {item.client}
                         </span>
                         <span className="text-xs font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
-                          {formatTime(item.time)}
+                          {item.startTime && item.endTime
+                            ? `${formatTime(item.startTime)} - ${formatTime(
+                                item.endTime
+                              )}`
+                            : formatTime(item.time)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between text-sm text-gray-600">
+                      <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
                         <span>{item.service}</span>
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full ${item.status === "confirmed"
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            item.status === "confirmed"
                               ? "bg-green-100 text-green-700"
                               : item.status === "completed"
-                                ? "bg-blue-100 text-blue-700"
-                                : item.status === "cancelled"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-yellow-100 text-yellow-700"
-                            }`}
+                              ? "bg-blue-100 text-blue-700"
+                              : item.status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
                         >
                           {item.status === "pending"
                             ? "Pendiente"
                             : item.status === "confirmed"
-                              ? "Confirmado"
-                              : item.status === "completed"
-                                ? "Completado"
-                                : "Cancelado"}
+                            ? "Confirmado"
+                            : item.status === "completed"
+                            ? "Completado"
+                            : "Cancelado"}
                         </span>
+                      </div>
+                      <div className="flex gap-2 text-xs">
+                        {item.duration && (
+                          <span className="text-gray-500 bg-gray-50 px-2 py-0.5 rounded">
+                            ⏱️ {Math.floor(item.duration / 60)}h{" "}
+                            {item.duration % 60}m
+                          </span>
+                        )}
+                        {item.reminders &&
+                          item.reminders.filter((r) => r.enabled).length >
+                            0 && (
+                            <span className="text-blue-600 bg-blue-50 px-2 py-0.5 rounded">
+                              🔔{" "}
+                              {item.reminders.filter((r) => r.enabled).length}
+                            </span>
+                          )}
                       </div>
                     </div>
                   ))
@@ -203,12 +224,51 @@ export default function DayAppointmentsModal({
                   <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
                     <Clock size={20} />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <p className="text-sm text-gray-500">Horario</p>
                     <p className="font-medium text-gray-900">
-                      {format(date, "d 'de' MMMM, yyyy", { locale: es })} •{" "}
-                      {formatTime(selectedItem.time)}
+                      {format(date, "d 'de' MMMM, yyyy", { locale: es })}
                     </p>
+                    <p className="font-semibold text-gray-900 text-lg">
+                      {selectedItem.startTime && selectedItem.endTime
+                        ? `${formatTime(selectedItem.startTime)} - ${formatTime(
+                            selectedItem.endTime
+                          )}`
+                        : formatTime(selectedItem.time)}
+                    </p>
+                    {selectedItem.duration && (
+                      <p className="text-sm text-gray-600 mt-1">
+                        ⏱️ Duración: {Math.floor(selectedItem.duration / 60)}h{" "}
+                        {selectedItem.duration % 60}m
+                      </p>
+                    )}
+                    {selectedItem.reminders &&
+                      selectedItem.reminders.filter((r) => r.enabled).length >
+                        0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500 mb-1">
+                            🔔 Recordatorios:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {selectedItem.reminders
+                              .filter((r) => r.enabled)
+                              .map((reminder, idx) => (
+                                <span
+                                  key={idx}
+                                  className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded"
+                                >
+                                  {reminder.value}{" "}
+                                  {reminder.type === "days"
+                                    ? "días"
+                                    : reminder.type === "hours"
+                                    ? "horas"
+                                    : "min"}{" "}
+                                  antes
+                                </span>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                   </div>
                 </div>
 
@@ -236,8 +296,6 @@ export default function DayAppointmentsModal({
                   </div>
                 </div>
 
-
-
                 {selectedItem.location && (
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-red-50 rounded-lg text-red-600">
@@ -255,7 +313,7 @@ export default function DayAppointmentsModal({
                 {/* Collaborators Section */}
                 {(selectedItem.collaborators &&
                   selectedItem.collaborators.length > 0) ||
-                  selectedItem.collaborator ? (
+                selectedItem.collaborator ? (
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
                       <Users size={20} />
@@ -265,7 +323,7 @@ export default function DayAppointmentsModal({
                         Colaboradores
                       </p>
                       {selectedItem.collaborators &&
-                        selectedItem.collaborators.length > 0 ? (
+                      selectedItem.collaborators.length > 0 ? (
                         <div className="space-y-2">
                           {selectedItem.collaborators.map((collab, idx) => (
                             <div
@@ -277,10 +335,11 @@ export default function DayAppointmentsModal({
                               </span>
                               <div className="text-right">
                                 <span
-                                  className={`block font-semibold ${collab.paymentType === "charge"
+                                  className={`block font-semibold ${
+                                    collab.paymentType === "charge"
                                       ? "text-green-600"
                                       : "text-orange-600"
-                                    }`}
+                                  }`}
                                 >
                                   {collab.paymentType === "charge" ? "+" : "-"}{" "}
                                   $
