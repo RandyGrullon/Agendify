@@ -58,6 +58,9 @@ export interface Client {
   notes?: string;
   createdAt: number;
   updatedAt: number;
+  // Encryption metadata
+  _encrypted?: boolean; // Flag to indicate if sensitive fields are encrypted
+  _encryptedFields?: string[]; // List of encrypted field names
 }
 
 export interface Collaborator {

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { UserPlus, Search } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { clientService } from "@/services/client.refactored";
+import { encryptedClientService } from "@/services/encryptedClient";
 import { Client } from "@/types";
 import ClientForm from "@/components/dashboard/ClientForm";
 import ClientTable from "@/components/dashboard/ClientTable";
@@ -19,7 +19,7 @@ import { LoadingSpinner } from "@/components/ui";
 export default function ClientsPage() {
   const { user } = useAuth();
   const { data: clients, loading } = useFirestoreCollection(
-    clientService,
+    encryptedClientService,
     user?.uid
   );
   const [searchTerm, setSearchTerm] = useState("");
@@ -32,7 +32,7 @@ export default function ClientsPage() {
     if (!user) return;
 
     await handleAsyncOperation(
-      () => clientService.create(user.uid, clientData),
+      () => encryptedClientService.create(user.uid, clientData),
       {
         successMessage: "Cliente creado exitosamente",
         errorMessage: "Error al crear cliente",
@@ -47,7 +47,11 @@ export default function ClientsPage() {
 
     await handleAsyncOperation(
       () =>
-        clientService.update(user.uid, formModal.editingItem!.id, clientData),
+        encryptedClientService.update(
+          formModal.editingItem!.id,
+          user.uid,
+          clientData
+        ),
       {
         successMessage: "Cliente actualizado exitosamente",
         errorMessage: "Error al actualizar cliente",
@@ -66,7 +70,7 @@ export default function ClientsPage() {
     if (!user || !deleteModal.item) return;
 
     await handleAsyncOperation(
-      () => clientService.delete(user.uid, deleteModal.item!.id),
+      () => encryptedClientService.delete(deleteModal.item!.id, user.uid),
       {
         successMessage: "Cliente eliminado exitosamente",
         errorMessage: "Error al eliminar cliente",
