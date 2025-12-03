@@ -1,21 +1,18 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Client } from '@/types';
+import { commonValidators } from '@/lib/validationSchemas';
+import { BaseModal, FormField, FormTextArea } from '@/components/ui';
+import { ButtonSpinner } from '@/components/ui/LoadingSpinner';
 
 const clientSchema = z.object({
-    name: z.string().min(1, 'Nombre requerido').max(100, 'Nombre muy largo'),
-    email: z.string().email('Email inválido').optional().or(z.literal('')),
-    phone: z.string()
-        .regex(/^[\d\s\-\+\(\)]+$/, 'Formato de teléfono inválido')
-        .min(10, 'Teléfono debe tener al menos 10 dígitos')
-        .optional()
-        .or(z.literal('')),
+    name: commonValidators.requiredString('Nombre').max(100, 'Nombre muy largo'),
+    email: commonValidators.email,
+    phone: commonValidators.phone,
     address: z.string().max(200, 'Dirección muy larga').optional(),
     notes: z.string().max(500, 'Notas muy largas').optional(),
 });
@@ -77,145 +74,69 @@ export default function ClientForm({
     };
 
     return (
-        <Transition appear show={isOpen} as={Fragment}>
-            <Dialog as="div" className="relative z-50" onClose={onClose}>
-                <Transition.Child
-                    as={Fragment}
-                    enter="ease-out duration-300"
-                    enterFrom="opacity-0"
-                    enterTo="opacity-100"
-                    leave="ease-in duration-200"
-                    leaveFrom="opacity-100"
-                    leaveTo="opacity-0"
-                >
-                    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm" />
-                </Transition.Child>
+        <BaseModal isOpen={isOpen} onClose={onClose} title={title}>
+            <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+                <FormField
+                    label="Nombre"
+                    required
+                    type="text"
+                    placeholder="Juan Pérez"
+                    error={errors.name}
+                    {...register('name')}
+                />
 
-                <div className="fixed inset-0 overflow-y-auto">
-                    <div className="flex min-h-full items-center justify-center p-4">
-                        <Transition.Child
-                            as={Fragment}
-                            enter="ease-out duration-300"
-                            enterFrom="opacity-0 scale-95"
-                            enterTo="opacity-100 scale-100"
-                            leave="ease-in duration-200"
-                            leaveFrom="opacity-100 scale-100"
-                            leaveTo="opacity-0 scale-95"
-                        >
-                            <Dialog.Panel className="w-full max-w-2xl transform overflow-hidden rounded-2xl bg-white p-6 shadow-xl transition-all">
-                                <div className="flex items-center justify-between mb-6">
-                                    <Dialog.Title className="text-2xl font-bold text-gray-900">
-                                        {title}
-                                    </Dialog.Title>
-                                    <button
-                                        onClick={onClose}
-                                        className="text-gray-400 hover:text-gray-600 transition-colors"
-                                    >
-                                        <X size={24} />
-                                    </button>
-                                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField
+                        label="Teléfono"
+                        type="tel"
+                        placeholder="+52 123 456 7890"
+                        error={errors.phone}
+                        {...register('phone')}
+                    />
 
-                                <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                            Nombre <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            {...register('name')}
-                                            placeholder="Juan Pérez"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                                        />
-                                        {errors.name && (
-                                            <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                                Teléfono
-                                            </label>
-                                            <input
-                                                type="tel"
-                                                {...register('phone')}
-                                                placeholder="+52 123 456 7890"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                                            />
-                                            {errors.phone && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                                Email
-                                            </label>
-                                            <input
-                                                type="email"
-                                                {...register('email')}
-                                                placeholder="cliente@ejemplo.com"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                                            />
-                                            {errors.email && (
-                                                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                            Dirección
-                                        </label>
-                                        <input
-                                            type="text"
-                                            {...register('address')}
-                                            placeholder="Calle 123, Ciudad"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                                        />
-                                        {errors.address && (
-                                            <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-1">
-                                            Notas
-                                        </label>
-                                        <textarea
-                                            {...register('notes')}
-                                            rows={3}
-                                            placeholder="Información adicional del cliente..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none text-gray-900 placeholder:text-gray-500"
-                                        />
-                                        {errors.notes && (
-                                            <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>
-                                        )}
-                                    </div>
-
-                                    <div className="flex justify-end gap-3 pt-4">
-                                        <button
-                                            type="button"
-                                            onClick={onClose}
-                                            className="px-6 py-2 border border-gray-300 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors"
-                                            disabled={isSubmitting}
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                            disabled={isSubmitting}
-                                        >
-                                            {isSubmitting ? 'Guardando...' : initialData ? 'Actualizar' : 'Crear Cliente'}
-                                        </button>
-                                    </div>
-                                </form>
-                            </Dialog.Panel>
-                        </Transition.Child>
-                    </div>
+                    <FormField
+                        label="Email"
+                        type="email"
+                        placeholder="cliente@ejemplo.com"
+                        error={errors.email}
+                        {...register('email')}
+                    />
                 </div>
-            </Dialog>
-        </Transition>
+
+                <FormField
+                    label="Dirección"
+                    type="text"
+                    placeholder="Calle 123, Ciudad"
+                    error={errors.address}
+                    {...register('address')}
+                />
+
+                <FormTextArea
+                    label="Notas"
+                    placeholder="Información adicional del cliente..."
+                    error={errors.notes}
+                    {...register('notes')}
+                />
+
+                <div className="flex justify-end gap-3 pt-4">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-6 py-2 border border-gray-300 rounded-lg text-gray-900 hover:bg-gray-50 transition-colors"
+                        disabled={isSubmitting}
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        disabled={isSubmitting}
+                    >
+                        {isSubmitting && <ButtonSpinner />}
+                        {isSubmitting ? 'Guardando...' : initialData ? 'Actualizar' : 'Crear Cliente'}
+                    </button>
+                </div>
+            </form>
+        </BaseModal>
     );
 }

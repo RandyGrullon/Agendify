@@ -1,108 +1,74 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { UserPlus, Search } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import {
-  subscribeToClients,
-  createClient,
-  updateClient,
-  deleteClient,
-} from "@/services/client";
+import { clientService } from "@/services/client.refactored";
 import { Client } from "@/types";
 import ClientForm from "@/components/dashboard/ClientForm";
 import ClientTable from "@/components/dashboard/ClientTable";
 import DeleteConfirmationModal from "@/components/dashboard/DeleteConfirmationModal";
-import { toast } from "sonner";
+import { useFirestoreCollection, useFormModal, useDeleteConfirmation } from "@/hooks";
+import { handleAsyncOperation } from "@/lib/errorHandler";
+import { LoadingSpinner } from "@/components/ui";
 
 export default function ClientsPage() {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const { data: clients, loading } = useFirestoreCollection(clientService, user?.uid);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingClient, setEditingClient] = useState<Client | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const unsubscribe = subscribeToClients(user.uid, (updatedClients) => {
-      setClients(updatedClients);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [user]);
+  const formModal = useFormModal<Client>();
+  const deleteModal = useDeleteConfirmation<Client>();
 
   const handleCreate = async (
     clientData: Omit<Client, "id" | "userId" | "createdAt" | "updatedAt">
   ) => {
     if (!user) return;
 
-    try {
-      await createClient(user.uid, clientData);
-      toast.success("Cliente creado exitosamente");
-    } catch (error) {
-      console.error("Error al crear cliente:", error);
-      toast.error("Error al crear cliente");
-      throw error;
-    }
+    await handleAsyncOperation(
+      () => clientService.create(user.uid, clientData),
+      {
+        successMessage: "Cliente creado exitosamente",
+        errorMessage: "Error al crear cliente",
+      }
+    );
   };
 
   const handleUpdate = async (
     clientData: Omit<Client, "id" | "userId" | "createdAt" | "updatedAt">
   ) => {
-    if (!user || !editingClient) return;
+    if (!user || !formModal.editingItem) return;
 
-    try {
-      await updateClient(user.uid, editingClient.id, clientData);
-      toast.success("Cliente actualizado exitosamente");
-    } catch (error) {
-      console.error("Error al actualizar cliente:", error);
-      toast.error("Error al actualizar cliente");
-      throw error;
-    }
+    await handleAsyncOperation(
+      () => clientService.update(user.uid, formModal.editingItem!.id, clientData),
+      {
+        successMessage: "Cliente actualizado exitosamente",
+        errorMessage: "Error al actualizar cliente",
+      }
+    );
   };
 
   const handleDelete = async (clientId: string) => {
     const client = clients.find((c) => c.id === clientId);
     if (client) {
-      setClientToDelete(client);
-      setIsDeleteModalOpen(true);
+      deleteModal.confirm(client);
     }
   };
 
   const handleConfirmDelete = async () => {
-    if (!user || !clientToDelete) return;
+    if (!user || !deleteModal.item) return;
 
-    try {
-      await deleteClient(user.uid, clientToDelete.id);
-      toast.success("Cliente eliminado exitosamente");
-      setClientToDelete(null);
-    } catch (error) {
-      console.error("Error al eliminar cliente:", error);
-      toast.error("Error al eliminar cliente");
-    }
-  };
-
-  const handleEdit = (client: Client) => {
-    setEditingClient(client);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setEditingClient(null);
+    await handleAsyncOperation(
+      () => clientService.delete(user.uid, deleteModal.item!.id),
+      {
+        successMessage: "Cliente eliminado exitosamente",
+        errorMessage: "Error al eliminar cliente",
+        onSuccess: () => deleteModal.close(),
+      }
+    );
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <LoadingSpinner fullScreen text="Cargando clientes..." />;
   }
 
   return (
@@ -131,7 +97,7 @@ export default function ClientsPage() {
           />
         </div>
         <button
-          onClick={() => setIsFormOpen(true)}
+          onClick={formModal.openNew}
           className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium shadow-sm"
         >
           <UserPlus size={20} />
@@ -148,28 +114,25 @@ export default function ClientsPage() {
 
       <ClientTable
         clients={clients}
-        onEdit={handleEdit}
+        onEdit={formModal.openEdit}
         onDelete={handleDelete}
         searchTerm={searchTerm}
       />
 
       <ClientForm
-        isOpen={isFormOpen}
-        onClose={handleCloseForm}
-        onSubmit={editingClient ? handleUpdate : handleCreate}
-        initialData={editingClient}
-        title={editingClient ? "Editar Cliente" : "Nuevo Cliente"}
+        isOpen={formModal.isOpen}
+        onClose={formModal.close}
+        onSubmit={formModal.editingItem ? handleUpdate : handleCreate}
+        initialData={formModal.editingItem}
+        title={formModal.editingItem ? "Editar Cliente" : "Nuevo Cliente"}
       />
 
       <DeleteConfirmationModal
-        isOpen={isDeleteModalOpen}
-        onClose={() => {
-          setIsDeleteModalOpen(false);
-          setClientToDelete(null);
-        }}
+        isOpen={deleteModal.isOpen}
+        onClose={deleteModal.close}
         onConfirm={handleConfirmDelete}
         title="Eliminar cliente"
-        message={`¿Estás seguro de que quieres eliminar al cliente "${clientToDelete?.name}"? Esta acción no se puede deshacer.`}
+        message={`¿Estás seguro de que quieres eliminar al cliente "${deleteModal.item?.name}"? Esta acción no se puede deshacer.`}
       />
     </div>
   );
