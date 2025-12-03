@@ -33,6 +33,7 @@ import CollaboratorForm from "./CollaboratorForm";
 import TimePicker from "./TimePicker";
 import { toast } from "sonner";
 import Link from "next/link";
+import type { FieldErrors } from "react-hook-form";
 
 const schema = z.object({
   date: z.string().min(1, "Fecha requerida"),
@@ -108,6 +109,14 @@ export default function AgendaForm({
   const [isCollaboratorFormOpen, setIsCollaboratorFormOpen] = useState(false);
   const [isTimePickerOpen, setIsTimePickerOpen] = useState(false);
   const [showCollaboratorPicker, setShowCollaboratorPicker] = useState(false);
+  const [selectedTab, setSelectedTab] = useState(0);
+
+  // Refs para los campos del formulario
+  const dateInputRef = useRef<HTMLInputElement>(null);
+  const clientInputRef = useRef<HTMLInputElement>(null);
+  const peopleCountInputRef = useRef<HTMLInputElement>(null);
+  const serviceInputRef = useRef<HTMLInputElement>(null);
+  const quotedAmountInputRef = useRef<HTMLInputElement>(null);
 
   // Common time slots
   const timeOptions = [
@@ -176,6 +185,97 @@ export default function AgendaForm({
       service: "",
     },
   });
+
+  // Función para manejar errores de validación y navegar al campo con error
+  const handleValidationError = (errors: FieldErrors<FormData>) => {
+    // Campos del Tab 1 (Información de la Cita)
+    const tab1Fields = [
+      "date",
+      "startTime",
+      "endTime",
+      "client",
+      "peopleCount",
+      "service",
+      "status",
+      "location",
+      "comments",
+    ];
+
+    // Campos del Tab 2 (Información de Pago)
+    const tab2Fields = ["quotedAmount", "deposit", "bank"];
+
+    // Verificar si hay errores en el Tab 1
+    const hasTab1Error = tab1Fields.some(
+      (field) => errors[field as keyof FormData]
+    );
+
+    // Verificar si hay errores en el Tab 2
+    const hasTab2Error = tab2Fields.some(
+      (field) => errors[field as keyof FormData]
+    );
+
+    // Encontrar el primer campo con error
+    const firstErrorField = Object.keys(errors)[0] as keyof FormData;
+
+    // Cambiar al tab correspondiente
+    if (hasTab1Error && selectedTab !== 0) {
+      setSelectedTab(0);
+      // Esperar a que el tab se renderice antes de hacer focus
+      setTimeout(() => focusErrorField(firstErrorField), 100);
+    } else if (hasTab2Error && selectedTab !== 1) {
+      setSelectedTab(1);
+      // Esperar a que el tab se renderice antes de hacer focus
+      setTimeout(() => focusErrorField(firstErrorField), 100);
+    } else {
+      // Si ya estamos en el tab correcto, hacer focus inmediatamente
+      focusErrorField(firstErrorField);
+    }
+
+    // Mostrar toast con el error
+    toast.error(
+      `Por favor, completa el campo: ${getFieldLabel(firstErrorField)}`
+    );
+  };
+
+  // Función para hacer focus en el campo con error
+  const focusErrorField = (fieldName: keyof FormData) => {
+    switch (fieldName) {
+      case "date":
+        dateInputRef.current?.focus();
+        break;
+      case "client":
+        clientInputRef.current?.focus();
+        break;
+      case "peopleCount":
+        peopleCountInputRef.current?.focus();
+        break;
+      case "service":
+        serviceInputRef.current?.focus();
+        break;
+      case "quotedAmount":
+        quotedAmountInputRef.current?.focus();
+        break;
+    }
+  };
+
+  // Función para obtener el label del campo
+  const getFieldLabel = (fieldName: keyof FormData): string => {
+    const labels: Record<string, string> = {
+      date: "Fecha",
+      startTime: "Hora de Inicio",
+      endTime: "Hora Final",
+      client: "Cliente",
+      peopleCount: "Personas",
+      service: "Servicio",
+      quotedAmount: "Monto Cotizado",
+      deposit: "Abono",
+      status: "Estatus",
+      location: "Ubicación",
+      bank: "Banco",
+      comments: "Comentarios",
+    };
+    return labels[fieldName] || fieldName;
+  };
 
   const quotedAmount = watch("quotedAmount") || 0;
   const deposit = watch("deposit") || 0;
@@ -495,6 +595,10 @@ export default function AgendaForm({
     onSubmit(enhancedData);
   };
 
+  const handleFormError = (errors: FieldErrors<FormData>) => {
+    handleValidationError(errors);
+  };
+
   const addCollaborator = () => {
     setShowCollaboratorPicker(true);
   };
@@ -621,9 +725,15 @@ export default function AgendaForm({
                     <div className="w-full">
                       <form
                         id="appointment-form"
-                        onSubmit={handleSubmit(handleFormSubmit)}
+                        onSubmit={handleSubmit(
+                          handleFormSubmit,
+                          handleFormError
+                        )}
                       >
-                        <Tab.Group>
+                        <Tab.Group
+                          selectedIndex={selectedTab}
+                          onChange={setSelectedTab}
+                        >
                           <Tab.List className="flex space-x-1 rounded-xl bg-blue-100 p-1 mb-6">
                             <Tab
                               className={({ selected }) =>
@@ -660,6 +770,10 @@ export default function AgendaForm({
                                 </label>
                                 <input
                                   {...register("date")}
+                                  ref={(e) => {
+                                    register("date").ref(e);
+                                    dateInputRef.current = e;
+                                  }}
                                   type="date"
                                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900"
                                 />
@@ -739,6 +853,7 @@ export default function AgendaForm({
                                         <div className="relative">
                                           <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                             <Combobox.Input
+                                              ref={clientInputRef}
                                               className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0"
                                               displayValue={(
                                                 client: Client | null
@@ -869,6 +984,10 @@ export default function AgendaForm({
                                 </label>
                                 <input
                                   {...register("peopleCount")}
+                                  ref={(e) => {
+                                    register("peopleCount").ref(e);
+                                    peopleCountInputRef.current = e;
+                                  }}
                                   type="number"
                                   min="1"
                                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm border p-2 text-gray-900"
@@ -925,6 +1044,7 @@ export default function AgendaForm({
                                         <div className="relative">
                                           <div className="relative w-full cursor-default overflow-hidden rounded-lg bg-white text-left border border-gray-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 sm:text-sm">
                                             <Combobox.Input
+                                              ref={serviceInputRef}
                                               className="w-full border-none py-2 pl-3 pr-10 text-sm leading-5 text-gray-900 focus:ring-0 placeholder:text-gray-500"
                                               displayValue={(
                                                 service: CatalogItem | null
@@ -1214,6 +1334,12 @@ export default function AgendaForm({
                                       {...register("quotedAmount", {
                                         valueAsNumber: true,
                                       })}
+                                      ref={(e) => {
+                                        register("quotedAmount", {
+                                          valueAsNumber: true,
+                                        }).ref(e);
+                                        quotedAmountInputRef.current = e;
+                                      }}
                                       type="number"
                                       min="0"
                                       step="0.01"
