@@ -8,13 +8,20 @@ import { Client } from "@/types";
 import ClientForm from "@/components/dashboard/ClientForm";
 import ClientTable from "@/components/dashboard/ClientTable";
 import DeleteConfirmationModal from "@/components/dashboard/DeleteConfirmationModal";
-import { useFirestoreCollection, useFormModal, useDeleteConfirmation } from "@/hooks";
+import {
+  useFirestoreCollection,
+  useFormModal,
+  useDeleteConfirmation,
+} from "@/hooks";
 import { handleAsyncOperation } from "@/lib/errorHandler";
 import { LoadingSpinner } from "@/components/ui";
 
 export default function ClientsPage() {
   const { user } = useAuth();
-  const { data: clients, loading } = useFirestoreCollection(clientService, user?.uid);
+  const { data: clients, loading } = useFirestoreCollection(
+    clientService,
+    user?.uid
+  );
   const [searchTerm, setSearchTerm] = useState("");
   const formModal = useFormModal<Client>();
   const deleteModal = useDeleteConfirmation<Client>();
@@ -39,7 +46,8 @@ export default function ClientsPage() {
     if (!user || !formModal.editingItem) return;
 
     await handleAsyncOperation(
-      () => clientService.update(user.uid, formModal.editingItem!.id, clientData),
+      () =>
+        clientService.update(user.uid, formModal.editingItem!.id, clientData),
       {
         successMessage: "Cliente actualizado exitosamente",
         errorMessage: "Error al actualizar cliente",

@@ -1,13 +1,13 @@
-import { FirestoreService } from '@/lib/firestoreService';
-import { Collaborator } from '@/types';
+import { FirestoreService } from "@/lib/firestoreService";
+import { Collaborator } from "@/types";
 
 /**
  * Collaborator service using generic FirestoreService
  */
 export const collaboratorService = new FirestoreService<Collaborator>(
-  'collaborators',
-  'name',
-  'asc'
+  "collaborators",
+  "name",
+  "asc"
 );
 
 // Legacy function exports for backward compatibility
@@ -19,7 +19,10 @@ export const subscribeToCollaborators = (
 
 export const createCollaborator = async (
   userId: string,
-  collaboratorData: Omit<Collaborator, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  collaboratorData: Omit<
+    Collaborator,
+    "id" | "userId" | "createdAt" | "updatedAt"
+  >
 ) => collaboratorService.create(userId, collaboratorData);
 
 export const updateCollaborator = async (
@@ -38,7 +41,5 @@ export const getCollaboratorById = async (
   collaboratorId: string
 ) => collaboratorService.getById(userId, collaboratorId);
 
-export const searchCollaborators = async (
-  userId: string,
-  searchTerm: string
-) => collaboratorService.search(userId, searchTerm, ['name', 'email', 'phone']);
+export const searchCollaborators = async (userId: string, searchTerm: string) =>
+  collaboratorService.search(userId, searchTerm, ["name", "email", "phone"]);

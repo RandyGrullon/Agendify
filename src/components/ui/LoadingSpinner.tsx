@@ -3,20 +3,20 @@
  * Replaces duplicate loading states in multiple pages
  */
 interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
+  size?: "sm" | "md" | "lg" | "xl";
   fullScreen?: boolean;
   text?: string;
 }
 
 const sizeClasses = {
-  sm: 'h-6 w-6 border-2',
-  md: 'h-10 w-10 border-2',
-  lg: 'h-12 w-12 border-2',
-  xl: 'h-16 w-16 border-4',
+  sm: "h-6 w-6 border-2",
+  md: "h-10 w-10 border-2",
+  lg: "h-12 w-12 border-2",
+  xl: "h-16 w-16 border-4",
 };
 
 export default function LoadingSpinner({
-  size = 'lg',
+  size = "lg",
   fullScreen = false,
   text,
 }: LoadingSpinnerProps) {

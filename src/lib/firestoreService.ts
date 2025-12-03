@@ -11,8 +11,8 @@ import {
   onSnapshot,
   QueryConstraint,
   DocumentData,
-} from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+} from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 /**
  * Base interface for all Firestore entities
@@ -31,8 +31,8 @@ export interface BaseEntity {
 export class FirestoreService<T extends BaseEntity> {
   constructor(
     private collectionName: string,
-    private defaultOrderByField: keyof T = 'createdAt' as keyof T,
-    private defaultOrderDirection: 'asc' | 'desc' = 'desc'
+    private defaultOrderByField: keyof T = "createdAt" as keyof T,
+    private defaultOrderDirection: "asc" | "desc" = "desc"
   ) {}
 
   /**
@@ -42,12 +42,12 @@ export class FirestoreService<T extends BaseEntity> {
     userId: string,
     callback: (items: T[]) => void,
     orderByField?: keyof T,
-    orderDirection?: 'asc' | 'desc'
+    orderDirection?: "asc" | "desc"
   ): () => void {
-    const itemsRef = collection(db, this.collectionName, userId, 'items');
+    const itemsRef = collection(db, this.collectionName, userId, "items");
     const orderField = orderByField || this.defaultOrderByField;
     const direction = orderDirection || this.defaultOrderDirection;
-    
+
     const q = query(itemsRef, orderBy(orderField as string, direction));
 
     return onSnapshot(q, (snapshot) => {
@@ -64,9 +64,9 @@ export class FirestoreService<T extends BaseEntity> {
    */
   async create(
     userId: string,
-    data: Omit<T, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+    data: Omit<T, "id" | "userId" | "createdAt" | "updatedAt">
   ): Promise<string> {
-    const itemsRef = collection(db, this.collectionName, userId, 'items');
+    const itemsRef = collection(db, this.collectionName, userId, "items");
     const now = Date.now();
 
     const newItem = {
@@ -86,9 +86,9 @@ export class FirestoreService<T extends BaseEntity> {
   async update(
     userId: string,
     itemId: string,
-    data: Partial<Omit<T, 'id' | 'userId' | 'createdAt'>>
+    data: Partial<Omit<T, "id" | "userId" | "createdAt">>
   ): Promise<void> {
-    const itemRef = doc(db, this.collectionName, userId, 'items', itemId);
+    const itemRef = doc(db, this.collectionName, userId, "items", itemId);
 
     const updateData = {
       ...data,
@@ -102,7 +102,7 @@ export class FirestoreService<T extends BaseEntity> {
    * Delete a document
    */
   async delete(userId: string, itemId: string): Promise<void> {
-    const itemRef = doc(db, this.collectionName, userId, 'items', itemId);
+    const itemRef = doc(db, this.collectionName, userId, "items", itemId);
     return await deleteDoc(itemRef);
   }
 
@@ -110,7 +110,7 @@ export class FirestoreService<T extends BaseEntity> {
    * Get a single document by ID
    */
   async getById(userId: string, itemId: string): Promise<T | null> {
-    const itemRef = doc(db, this.collectionName, userId, 'items', itemId);
+    const itemRef = doc(db, this.collectionName, userId, "items", itemId);
     const snapshot = await getDoc(itemRef);
 
     if (!snapshot.exists()) return null;
@@ -124,12 +124,12 @@ export class FirestoreService<T extends BaseEntity> {
   async getAll(
     userId: string,
     orderByField?: keyof T,
-    orderDirection?: 'asc' | 'desc'
+    orderDirection?: "asc" | "desc"
   ): Promise<T[]> {
-    const itemsRef = collection(db, this.collectionName, userId, 'items');
+    const itemsRef = collection(db, this.collectionName, userId, "items");
     const orderField = orderByField || this.defaultOrderByField;
     const direction = orderDirection || this.defaultOrderDirection;
-    
+
     const q = query(itemsRef, orderBy(orderField as string, direction));
     const snapshot = await getDocs(q);
 
@@ -169,7 +169,7 @@ export class FirestoreService<T extends BaseEntity> {
     callback: (items: T[]) => void,
     constraints: QueryConstraint[]
   ): () => void {
-    const itemsRef = collection(db, this.collectionName, userId, 'items');
+    const itemsRef = collection(db, this.collectionName, userId, "items");
     const q = query(itemsRef, ...constraints);
 
     return onSnapshot(q, (snapshot) => {

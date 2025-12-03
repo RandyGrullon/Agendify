@@ -1,6 +1,6 @@
-import { Fragment, ReactNode } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { X } from 'lucide-react';
+import { Fragment, ReactNode } from "react";
+import { Dialog, Transition } from "@headlessui/react";
+import { X } from "lucide-react";
 
 /**
  * Base modal wrapper component to eliminate duplicate Dialog/Transition code
@@ -11,17 +11,17 @@ interface BaseModalProps {
   onClose: () => void;
   title: string;
   children: ReactNode;
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl';
+  maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "3xl" | "4xl";
 }
 
 const maxWidthClasses = {
-  sm: 'max-w-sm',
-  md: 'max-w-md',
-  lg: 'max-w-lg',
-  xl: 'max-w-xl',
-  '2xl': 'max-w-2xl',
-  '3xl': 'max-w-3xl',
-  '4xl': 'max-w-4xl',
+  sm: "max-w-sm",
+  md: "max-w-md",
+  lg: "max-w-lg",
+  xl: "max-w-xl",
+  "2xl": "max-w-2xl",
+  "3xl": "max-w-3xl",
+  "4xl": "max-w-4xl",
 };
 
 export default function BaseModal({
@@ -29,7 +29,7 @@ export default function BaseModal({
   onClose,
   title,
   children,
-  maxWidth = '2xl',
+  maxWidth = "2xl",
 }: BaseModalProps) {
   return (
     <Transition appear show={isOpen} as={Fragment}>

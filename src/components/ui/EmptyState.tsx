@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode } from "react";
 
 /**
  * Reusable empty state component
@@ -15,8 +15,8 @@ interface EmptyStateProps {
 }
 
 export default function EmptyState({
-  title = 'No hay datos',
-  message = 'No se encontraron elementos',
+  title = "No hay datos",
+  message = "No se encontraron elementos",
   icon,
   action,
 }: EmptyStateProps) {

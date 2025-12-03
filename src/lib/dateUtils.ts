@@ -1,5 +1,5 @@
-import { format, parse, isValid } from 'date-fns';
-import { es } from 'date-fns/locale';
+import { format, parse, isValid } from "date-fns";
+import { es } from "date-fns/locale";
 
 /**
  * Centralized date utility functions
@@ -22,7 +22,7 @@ export const parseDateSafely = (
     }
 
     // Excel serial date (number between 1 and 60000)
-    if (typeof dateValue === 'number') {
+    if (typeof dateValue === "number") {
       if (dateValue > 60000) {
         // Likely a timestamp
         return new Date(dateValue);
@@ -33,16 +33,16 @@ export const parseDateSafely = (
     }
 
     // String: try various formats
-    if (typeof dateValue === 'string') {
+    if (typeof dateValue === "string") {
       // ISO format (YYYY-MM-DD)
       if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-        const parsed = parse(dateValue, 'yyyy-MM-dd', new Date());
+        const parsed = parse(dateValue, "yyyy-MM-dd", new Date());
         return isValid(parsed) ? parsed : new Date();
       }
 
       // DD/MM/YYYY format
       if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateValue)) {
-        const parsed = parse(dateValue, 'dd/MM/yyyy', new Date());
+        const parsed = parse(dateValue, "dd/MM/yyyy", new Date());
         return isValid(parsed) ? parsed : new Date();
       }
 
@@ -53,7 +53,7 @@ export const parseDateSafely = (
 
     return new Date();
   } catch (error) {
-    console.error('Error parsing date:', error);
+    console.error("Error parsing date:", error);
     return new Date();
   }
 };
@@ -63,13 +63,13 @@ export const parseDateSafely = (
  */
 export const formatDate = (
   date: string | number | Date | null | undefined,
-  formatStr: string = 'd MMM yyyy'
+  formatStr: string = "d MMM yyyy"
 ): string => {
   try {
     const parsedDate = parseDateSafely(date);
     return format(parsedDate, formatStr, { locale: es });
   } catch (error) {
-    return 'Fecha inválida';
+    return "Fecha inválida";
   }
 };
 
@@ -81,9 +81,9 @@ export const formatDateForInput = (
 ): string => {
   try {
     const parsedDate = parseDateSafely(date);
-    return format(parsedDate, 'yyyy-MM-dd');
+    return format(parsedDate, "yyyy-MM-dd");
   } catch (error) {
-    return format(new Date(), 'yyyy-MM-dd');
+    return format(new Date(), "yyyy-MM-dd");
   }
 };
 
@@ -94,7 +94,7 @@ export const formatDateTime = (
   date: string | number | Date | null | undefined,
   time?: string
 ): string => {
-  const dateStr = formatDate(date, 'd MMM yyyy');
+  const dateStr = formatDate(date, "d MMM yyyy");
   if (time) {
     return `${dateStr} ${time}`;
   }
@@ -108,7 +108,7 @@ export const isToday = (date: string | number | Date): boolean => {
   try {
     const parsedDate = parseDateSafely(date);
     const today = new Date();
-    return format(parsedDate, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+    return format(parsedDate, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
   } catch {
     return false;
   }
@@ -136,19 +136,19 @@ export const getRelativeDateString = (date: string | number | Date): string => {
     const parsedDate = parseDateSafely(date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const targetDate = new Date(parsedDate);
     targetDate.setHours(0, 0, 0, 0);
-    
+
     const diffTime = targetDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return 'Hoy';
-    if (diffDays === 1) return 'Mañana';
-    if (diffDays === -1) return 'Ayer';
+
+    if (diffDays === 0) return "Hoy";
+    if (diffDays === 1) return "Mañana";
+    if (diffDays === -1) return "Ayer";
     if (diffDays > 0) return `En ${diffDays} días`;
     return `Hace ${Math.abs(diffDays)} días`;
   } catch {
-    return '';
+    return "";
   }
 };

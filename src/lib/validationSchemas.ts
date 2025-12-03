@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 /**
  * Shared validation schemas to eliminate duplication across forms
@@ -6,29 +6,21 @@ import { z } from 'zod';
  */
 
 export const commonValidators = {
-  email: z
-    .string()
-    .email('Email inválido')
-    .optional()
-    .or(z.literal('')),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
 
   phone: z
     .string()
-    .regex(/^[\d\s\-\+\(\)]+$/, 'Formato de teléfono inválido')
-    .min(10, 'Teléfono debe tener al menos 10 dígitos')
+    .regex(/^[\d\s\-\+\(\)]+$/, "Formato de teléfono inválido")
+    .min(10, "Teléfono debe tener al menos 10 dígitos")
     .optional()
-    .or(z.literal('')),
+    .or(z.literal("")),
 
-  url: z
-    .string()
-    .url('URL inválida')
-    .optional()
-    .or(z.literal('')),
+  url: z.string().url("URL inválida").optional().or(z.literal("")),
 
   requiredString: (fieldName: string) =>
     z.string().min(1, `${fieldName} es requerido`),
 
-  optionalString: z.string().optional().or(z.literal('')),
+  optionalString: z.string().optional().or(z.literal("")),
 
   positiveNumber: (fieldName: string) =>
     z
@@ -41,13 +33,13 @@ export const commonValidators = {
       .nonnegative(`${fieldName} no puede ser negativo`),
 
   price: z
-    .number({ message: 'El precio debe ser un número' })
-    .nonnegative('El precio no puede ser negativo'),
+    .number({ message: "El precio debe ser un número" })
+    .nonnegative("El precio no puede ser negativo"),
 
   stock: z
-    .number({ message: 'El stock debe ser un número' })
-    .int('El stock debe ser un número entero')
-    .nonnegative('El stock no puede ser negativo')
+    .number({ message: "El stock debe ser un número" })
+    .int("El stock debe ser un número entero")
+    .nonnegative("El stock no puede ser negativo")
     .optional(),
 };
 

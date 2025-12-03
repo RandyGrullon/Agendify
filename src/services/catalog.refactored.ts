@@ -1,14 +1,14 @@
-import { FirestoreService } from '@/lib/firestoreService';
-import { CatalogItem } from '@/types';
+import { FirestoreService } from "@/lib/firestoreService";
+import { CatalogItem } from "@/types";
 
 /**
  * Catalog service using generic FirestoreService
  * Handles all catalog item types: storable, digital, service
  */
 export const catalogService = new FirestoreService<CatalogItem>(
-  'catalog',
-  'name',
-  'asc'
+  "catalog",
+  "name",
+  "asc"
 );
 
 // Legacy function exports for backward compatibility
@@ -20,7 +20,7 @@ export const subscribeToCatalog = (
 
 export const createCatalogItem = async (
   userId: string,
-  itemData: Omit<CatalogItem, 'id' | 'userId' | 'createdAt' | 'updatedAt'>
+  itemData: Omit<CatalogItem, "id" | "userId" | "createdAt" | "updatedAt">
 ) => catalogService.create(userId, itemData);
 
 export const updateCatalogItem = async (
@@ -36,7 +36,7 @@ export const getCatalogItemById = async (userId: string, itemId: string) =>
   catalogService.getById(userId, itemId);
 
 export const searchCatalogItems = async (userId: string, searchTerm: string) =>
-  catalogService.search(userId, searchTerm, ['name', 'description', 'sku']);
+  catalogService.search(userId, searchTerm, ["name", "description", "sku"]);
 
 /**
  * Search catalog items by type
@@ -44,11 +44,11 @@ export const searchCatalogItems = async (userId: string, searchTerm: string) =>
 export const searchCatalogByType = async (
   userId: string,
   searchTerm: string,
-  type: 'storable' | 'digital' | 'service'
+  type: "storable" | "digital" | "service"
 ) => {
   const allItems = await catalogService.search(userId, searchTerm, [
-    'name',
-    'description',
+    "name",
+    "description",
   ]);
   return allItems.filter((item) => item.type === type);
 };

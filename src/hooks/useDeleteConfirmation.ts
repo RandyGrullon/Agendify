@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 /**
  * Hook for managing delete confirmation modal state
@@ -19,10 +19,10 @@ export const useDeleteConfirmation = <T>() => {
     setTimeout(() => setItem(null), 150);
   };
 
-  return { 
-    isOpen, 
-    item, 
-    confirm, 
-    close 
+  return {
+    isOpen,
+    item,
+    confirm,
+    close,
   };
 };

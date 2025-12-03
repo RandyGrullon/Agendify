@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { FirestoreService, BaseEntity } from '@/lib/firestoreService';
+import { useState, useEffect } from "react";
+import { FirestoreService, BaseEntity } from "@/lib/firestoreService";
 
 /**
  * Hook for subscribing to Firestore collections with loading state
@@ -9,7 +9,7 @@ export const useFirestoreCollection = <T extends BaseEntity>(
   service: FirestoreService<T>,
   userId?: string,
   orderByField?: keyof T,
-  orderDirection?: 'asc' | 'desc'
+  orderDirection?: "asc" | "desc"
 ) => {
   const [data, setData] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);

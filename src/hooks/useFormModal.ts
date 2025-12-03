@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from "react";
 
 /**
  * Hook for managing form modal state (open/close + editing item)
@@ -19,13 +19,13 @@ export const useFormModal = <T>() => {
     setTimeout(() => setEditingItem(null), 150);
   };
 
-  return { 
-    isOpen, 
-    editingItem, 
-    open, 
+  return {
+    isOpen,
+    editingItem,
+    open,
     close,
     // Convenience methods
     openNew: () => open(),
-    openEdit: (item: T) => open(item)
+    openEdit: (item: T) => open(item),
   };
 };

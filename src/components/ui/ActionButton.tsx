@@ -1,5 +1,5 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
-import { LucideIcon } from 'lucide-react';
+import { ButtonHTMLAttributes, ReactNode } from "react";
+import { LucideIcon } from "lucide-react";
 
 /**
  * Reusable action button component
@@ -7,22 +7,22 @@ import { LucideIcon } from 'lucide-react';
  */
 interface ActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: LucideIcon;
-  variant?: 'primary' | 'secondary' | 'danger' | 'success';
+  variant?: "primary" | "secondary" | "danger" | "success";
   tooltip?: string;
-  size?: 'sm' | 'md' | 'lg';
+  size?: "sm" | "md" | "lg";
 }
 
 const variantClasses = {
-  primary: 'text-blue-600 hover:text-blue-900 hover:bg-blue-100',
-  secondary: 'text-gray-600 hover:text-gray-900 hover:bg-gray-100',
-  danger: 'text-red-600 hover:text-red-900 hover:bg-red-100',
-  success: 'text-green-600 hover:text-green-900 hover:bg-green-100',
+  primary: "text-blue-600 hover:text-blue-900 hover:bg-blue-100",
+  secondary: "text-gray-600 hover:text-gray-900 hover:bg-gray-100",
+  danger: "text-red-600 hover:text-red-900 hover:bg-red-100",
+  success: "text-green-600 hover:text-green-900 hover:bg-green-100",
 };
 
 const sizeClasses = {
-  sm: 'p-1',
-  md: 'p-2',
-  lg: 'p-3',
+  sm: "p-1",
+  md: "p-2",
+  lg: "p-3",
 };
 
 const iconSizes = {
@@ -33,10 +33,10 @@ const iconSizes = {
 
 export default function ActionButton({
   icon: Icon,
-  variant = 'primary',
+  variant = "primary",
   tooltip,
-  size = 'md',
-  className = '',
+  size = "md",
+  className = "",
   ...props
 }: ActionButtonProps) {
   return (
@@ -60,7 +60,7 @@ interface ActionButtonGroupProps {
 
 export function ActionButtonGroup({
   children,
-  className = '',
+  className = "",
 }: ActionButtonGroupProps) {
   return (
     <div className={`flex items-center gap-1 ${className}`}>{children}</div>

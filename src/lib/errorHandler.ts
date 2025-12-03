@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { toast } from "sonner";
 
 /**
  * Centralized error handling utilities
@@ -9,21 +9,21 @@ import { toast } from 'sonner';
  * Firestore error codes and their user-friendly messages
  */
 const FIRESTORE_ERROR_MESSAGES: Record<string, string> = {
-  'permission-denied': 'No tienes permisos para realizar esta acción',
-  'not-found': 'El recurso solicitado no fue encontrado',
-  'already-exists': 'Este elemento ya existe',
-  'unauthenticated': 'Debes iniciar sesión para continuar',
-  'resource-exhausted': 'Se ha excedido el límite de uso',
-  'failed-precondition': 'No se puede completar la operación en este momento',
-  'aborted': 'La operación fue cancelada',
-  'out-of-range': 'Valor fuera del rango permitido',
-  'unimplemented': 'Esta función no está implementada',
-  'internal': 'Error interno del servidor',
-  'unavailable': 'El servicio no está disponible. Intenta nuevamente',
-  'data-loss': 'Se perdió información. Contacta soporte',
-  'cancelled': 'Operación cancelada',
-  'invalid-argument': 'Los datos proporcionados son inválidos',
-  'deadline-exceeded': 'La operación tomó demasiado tiempo',
+  "permission-denied": "No tienes permisos para realizar esta acción",
+  "not-found": "El recurso solicitado no fue encontrado",
+  "already-exists": "Este elemento ya existe",
+  unauthenticated: "Debes iniciar sesión para continuar",
+  "resource-exhausted": "Se ha excedido el límite de uso",
+  "failed-precondition": "No se puede completar la operación en este momento",
+  aborted: "La operación fue cancelada",
+  "out-of-range": "Valor fuera del rango permitido",
+  unimplemented: "Esta función no está implementada",
+  internal: "Error interno del servidor",
+  unavailable: "El servicio no está disponible. Intenta nuevamente",
+  "data-loss": "Se perdió información. Contacta soporte",
+  cancelled: "Operación cancelada",
+  "invalid-argument": "Los datos proporcionados son inválidos",
+  "deadline-exceeded": "La operación tomó demasiado tiempo",
 };
 
 /**
@@ -31,18 +31,21 @@ const FIRESTORE_ERROR_MESSAGES: Record<string, string> = {
  */
 export const getErrorMessage = (
   error: any,
-  defaultMessage: string = 'Ocurrió un error inesperado'
+  defaultMessage: string = "Ocurrió un error inesperado"
 ): string => {
   // Check if error has a custom message
-  if (error?.message && typeof error.message === 'string') {
+  if (error?.message && typeof error.message === "string") {
     // Don't expose technical messages directly
-    if (!error.message.includes('Firebase') && !error.message.includes('Error:')) {
+    if (
+      !error.message.includes("Firebase") &&
+      !error.message.includes("Error:")
+    ) {
       return error.message;
     }
   }
 
   // Check for Firestore error codes
-  if (error?.code && typeof error.code === 'string') {
+  if (error?.code && typeof error.code === "string") {
     const firestoreError = FIRESTORE_ERROR_MESSAGES[error.code];
     if (firestoreError) {
       return firestoreError;
@@ -50,8 +53,8 @@ export const getErrorMessage = (
   }
 
   // Check for network errors
-  if (error?.name === 'NetworkError' || error?.message?.includes('network')) {
-    return 'Error de conexión. Verifica tu internet';
+  if (error?.name === "NetworkError" || error?.message?.includes("network")) {
+    return "Error de conexión. Verifica tu internet";
   }
 
   return defaultMessage;
@@ -62,11 +65,11 @@ export const getErrorMessage = (
  */
 export const handleFirestoreError = (
   error: any,
-  defaultMessage: string = 'Error al realizar la operación'
+  defaultMessage: string = "Error al realizar la operación"
 ): void => {
   const message = getErrorMessage(error, defaultMessage);
   toast.error(message);
-  console.error('Firestore error:', error);
+  console.error("Firestore error:", error);
 };
 
 /**
@@ -85,7 +88,7 @@ export const handleAsyncOperation = async <T>(
   const {
     loadingMessage,
     successMessage,
-    errorMessage = 'Error al realizar la operación',
+    errorMessage = "Error al realizar la operación",
     onSuccess,
     onError,
   } = options;
@@ -138,7 +141,7 @@ export const validateAndShowErrors = (
     .filter(Boolean);
 
   if (errorMessages.length > 0) {
-    toast.error(errorMessages[0] || 'Por favor corrige los errores');
+    toast.error(errorMessages[0] || "Por favor corrige los errores");
     return false;
   }
 
@@ -149,7 +152,7 @@ export const validateAndShowErrors = (
  * Log error for debugging (only in development)
  */
 export const logError = (context: string, error: any): void => {
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     console.error(`[${context}]:`, error);
   }
 };

@@ -1,4 +1,4 @@
-import { SelectHTMLAttributes, forwardRef } from 'react';
+import { SelectHTMLAttributes, forwardRef } from "react";
 
 /**
  * Reusable select field component
@@ -21,7 +21,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
       helpText,
       options,
       placeholder,
-      className = '',
+      className = "",
       ...props
     },
     ref
@@ -35,7 +35,7 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
         <select
           ref={ref}
           className={`w-full px-4 py-2 border ${
-            error ? 'border-red-500' : 'border-gray-300'
+            error ? "border-red-500" : "border-gray-300"
           } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors bg-white ${className}`}
           {...props}
         >
@@ -53,14 +53,12 @@ const FormSelect = forwardRef<HTMLSelectElement, FormSelectProps>(
         {helpText && !error && (
           <p className="mt-1 text-sm text-gray-500">{helpText}</p>
         )}
-        {error && (
-          <p className="mt-1 text-sm text-red-600">{error.message}</p>
-        )}
+        {error && <p className="mt-1 text-sm text-red-600">{error.message}</p>}
       </div>
     );
   }
 );
 
-FormSelect.displayName = 'FormSelect';
+FormSelect.displayName = "FormSelect";
 
 export default FormSelect;

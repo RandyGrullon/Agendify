@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 
 /**
  * Hook for responsive design - detects mobile vs desktop viewport
@@ -9,16 +9,16 @@ export const useResponsive = (breakpoint: number = 768) => {
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < breakpoint);
-    
+
     checkMobile();
-    window.addEventListener('resize', checkMobile);
-    
-    return () => window.removeEventListener('resize', checkMobile);
+    window.addEventListener("resize", checkMobile);
+
+    return () => window.removeEventListener("resize", checkMobile);
   }, [breakpoint]);
 
-  return { 
-    isMobile, 
+  return {
+    isMobile,
     isDesktop: !isMobile,
-    isTablet: window.innerWidth >= 768 && window.innerWidth < 1024
+    isTablet: window.innerWidth >= 768 && window.innerWidth < 1024,
   };
 };
